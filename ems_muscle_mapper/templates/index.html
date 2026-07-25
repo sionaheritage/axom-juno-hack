@@ -9,13 +9,15 @@
 </head>
 
 <body>
-    <div class="card">
-        <h2>⚡ EMS Muscle Mapper</h2>
-        <p>Upload a relaxed photo and a tensed photo (from the exact same angle) to calculate optimal EMS pad placement.
-        </p>
+    <main class="card">
+        <header class="app-intro">
+            <p class="eyebrow">Biomechanical analysis // EMS placement</p>
+            <h1>EMS Muscle Mapper</h1>
+            <p>Upload a relaxed photo and a tensed photo from the same angle to calculate optimal EMS pad placement.</p>
+        </header>
 
         <section class="capture-guidance" aria-labelledby="captureGuidanceTitle">
-            <h3 id="captureGuidanceTitle">For the most accurate result</h3>
+            <h2 id="captureGuidanceTitle">For the most accurate result</h2>
             <ul>
                 <li>Photograph one person only, with no people visible in the background.</li>
                 <li>Use the same arm, camera position, distance and side-on or slightly oblique angle in both photos.</li>
@@ -35,21 +37,26 @@
                     <input type="file" id="flexed" accept="image/*" required>
                 </div>
             </div>
-            <button type="submit">Analyze Muscle & Map Pads</button>
+            <button type="submit">Analyze Muscle &amp; Map Pads</button>
         </form>
 
-        <div class="loading" id="loadingState">Analyzing biomechanics (this takes a few seconds)...</div>
-        <div class="error" id="errorState" role="alert"></div>
+        <div class="status-stack">
+            <div class="loading" id="loadingState">Analyzing biomechanics (this takes a few seconds)...</div>
+            <div class="error" id="errorState" role="alert"></div>
+        </div>
+
+        <h2 class="result-heading" id="resultHeading" hidden>EMS Pad Mapping</h2>
 
         <div id="resultContainer">
-            <h3>EMS Pad Mapping</h3>
             <figure class="result-figure">
                 <img id="resultImage" src="" alt="EMS Output">
                 <figcaption class="result-caption" id="altText"></figcaption>
             </figure>
+        </div>
 
+        <div class="result-details" id="resultDetails" hidden>
             <section class="meaning-panel" aria-labelledby="meaningTitle">
-                <h3 id="meaningTitle">What does this mean?</h3>
+                <h2 id="meaningTitle">What does this mean?</h2>
                 <p>Place the EMS pads at the marked proximal and distal points for each highlighted muscle group.
                     The pads deliver electrical impulses across the muscle, causing it to contract and helping
                     replicate the detected movement.</p>
@@ -60,11 +67,11 @@
                 <div class="feedback-actions" aria-label="Mapping accuracy">
                     <button class="feedback-icon" id="thumbUpButton" type="button"
                         aria-label="Yes, this mapping is accurate" aria-pressed="false">
-                        <span aria-hidden="true">👍</span>
+                        <span aria-hidden="true">&#128077;</span>
                     </button>
                     <button class="feedback-icon" id="thumbDownButton" type="button"
                         aria-label="No, this mapping needs correcting" aria-pressed="false">
-                        <span aria-hidden="true">👎</span>
+                        <span aria-hidden="true">&#128078;</span>
                     </button>
                 </div>
 
@@ -79,7 +86,7 @@
                 <p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p>
             </section>
         </div>
-    </div>
+    </main>
 
     <script src="/static/js/app.js" defer></script>
 </body>

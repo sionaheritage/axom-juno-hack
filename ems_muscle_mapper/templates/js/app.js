@@ -2,6 +2,8 @@ const uploadForm = document.getElementById('uploadForm');
 const loadingState = document.getElementById('loadingState');
 const errorState = document.getElementById('errorState');
 const resultContainer = document.getElementById('resultContainer');
+const resultHeading = document.getElementById('resultHeading');
+const resultDetails = document.getElementById('resultDetails');
 const resultImage = document.getElementById('resultImage');
 const altText = document.getElementById('altText');
 const thumbUpButton = document.getElementById('thumbUpButton');
@@ -58,6 +60,8 @@ async function displayResult(result) {
     }
     altText.textContent = result.alt_text;
     resultContainer.style.display = 'block';
+    resultHeading.hidden = false;
+    resultDetails.hidden = false;
     requestAnimationFrame(() => {
         requestAnimationFrame(() => resultImage.classList.add('is-visible'));
     });
@@ -90,6 +94,8 @@ uploadForm.onsubmit = async (event) => {
 
     loadingState.style.display = 'block';
     resultContainer.style.display = 'none';
+    resultHeading.hidden = true;
+    resultDetails.hidden = true;
     errorState.style.display = 'none';
     currentResult = null;
     resetFeedback();

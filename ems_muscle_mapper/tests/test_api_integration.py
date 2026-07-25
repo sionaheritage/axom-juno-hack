@@ -238,6 +238,18 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertIn('class="upload-grid"', response.text)
         self.assertIn("<figcaption", response.text)
         self.assertIn("What does this mean?", response.text)
+        self.assertIn('id="resultHeading"', response.text)
+        self.assertIn('id="resultDetails"', response.text)
+
+    def test_styles_include_neon_palette_and_wide_split_layout(self):
+        response = TestClient(main.app).get("/static/css/style.css")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("--signal: #87f7c7", response.text)
+        self.assertIn("@media (min-width: 1100px)", response.text)
+        self.assertIn('"intro visual"', response.text)
+        self.assertIn('"details visual"', response.text)
+        self.assertIn("@media (max-width: 640px)", response.text)
 
     def test_refine_returns_new_rendered_mapping(self):
         analysis = MuscleAnalysisResult.model_validate(
