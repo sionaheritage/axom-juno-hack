@@ -48,11 +48,32 @@ body::before {
     pointer-events: none;
     content: "";
     background:
+        radial-gradient(circle at 16% 24%, rgba(135, 247, 199, 0.34) 0 1px, transparent 2px),
+        radial-gradient(circle at 84% 68%, rgba(135, 247, 199, 0.26) 0 1px, transparent 2px),
+        linear-gradient(122deg, transparent 0 48%, rgba(135, 247, 199, 0.035) 48% 48.2%, transparent 48.2%),
         linear-gradient(90deg, rgba(135, 247, 199, 0.025) 1px, transparent 1px),
         linear-gradient(rgba(135, 247, 199, 0.02) 1px, transparent 1px),
         repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 4px);
-    background-size: 72px 72px, 72px 72px, auto;
+    background-size: auto, auto, auto, 72px 72px, 72px 72px, auto;
     mask-image: radial-gradient(circle at center, black, transparent 88%);
+}
+
+body::after {
+    position: fixed;
+    inset: -35%;
+    z-index: 0;
+    pointer-events: none;
+    content: "";
+    background: linear-gradient(
+        108deg,
+        transparent 42%,
+        rgba(135, 247, 199, 0.035) 48%,
+        rgba(135, 247, 199, 0.09) 50%,
+        rgba(135, 247, 199, 0.035) 52%,
+        transparent 58%
+    );
+    transform: translateX(-38%);
+    animation: scan-glow 24s ease-in-out infinite;
 }
 
 button,
@@ -86,6 +107,26 @@ textarea {
 
 .app-intro {
     margin-bottom: 1.5rem;
+}
+
+.text-enter {
+    animation: text-enter 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.enter-1 {
+    animation-delay: 40ms;
+}
+
+.enter-2 {
+    animation-delay: 100ms;
+}
+
+.enter-3 {
+    animation-delay: 160ms;
+}
+
+.enter-4 {
+    animation-delay: 220ms;
 }
 
 .eyebrow {
@@ -153,8 +194,13 @@ h1 {
     margin-top: 0.35rem;
 }
 
+.upload-zone,
 #uploadForm {
     min-width: 0;
+}
+
+#uploadForm {
+    animation: controls-enter 440ms cubic-bezier(0.22, 1, 0.36, 1) 100ms both;
 }
 
 .upload-grid {
@@ -249,6 +295,13 @@ button:disabled {
     opacity: 0.55;
 }
 
+button.change-images-button {
+    width: auto;
+    min-height: 2.35rem;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.66rem;
+}
+
 .status-stack {
     min-height: 0;
 }
@@ -280,6 +333,20 @@ button:disabled {
     margin-top: 2rem;
 }
 
+.result-heading.is-entering,
+.meaning-panel.is-entering,
+.feedback-panel.is-entering {
+    animation: text-enter 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.meaning-panel.is-entering {
+    animation-delay: 60ms;
+}
+
+.feedback-panel.is-entering {
+    animation-delay: 120ms;
+}
+
 #resultContainer {
     display: none;
     min-width: 0;
@@ -290,12 +357,32 @@ button:disabled {
     margin: 0;
     padding: 0.65rem;
     border: 1px solid rgba(135, 247, 199, 0.22);
+    outline: 1px solid rgba(135, 247, 199, 0.08);
+    outline-offset: -0.35rem;
     background:
         linear-gradient(90deg, rgba(135, 247, 199, 0.035) 1px, transparent 1px),
         linear-gradient(rgba(135, 247, 199, 0.03) 1px, transparent 1px),
         #06100e;
     background-size: 48px 48px;
     box-shadow: 0 22px 54px var(--shadow);
+}
+
+.frame-label {
+    position: absolute;
+    top: 0;
+    left: 2.6rem;
+    z-index: 3;
+    padding: 0.18rem 0.45rem;
+    border-right: 1px solid rgba(135, 247, 199, 0.35);
+    border-left: 1px solid rgba(135, 247, 199, 0.35);
+    background: #081512;
+    color: var(--signal);
+    font-family: "IBM Plex Mono", Consolas, monospace;
+    font-size: 0.57rem;
+    letter-spacing: 0.13em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    transform: translateY(-50%);
 }
 
 .result-figure::before,
@@ -468,59 +555,84 @@ button.refine-button {
     body {
         display: grid;
         align-items: start;
-        padding: clamp(1.5rem, 3vw, 3rem);
+        height: 100dvh;
+        padding: clamp(0.75rem, 2vh, 1.5rem) clamp(1.5rem, 3vw, 3rem);
+        overflow: hidden;
     }
 
     .card {
         display: grid;
         grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
         grid-template-areas:
-            "intro visual"
+            "intro controls"
             "guidance visual"
-            "form visual"
-            "status visual"
             "result-title visual"
             "details visual";
+        grid-template-rows: auto auto auto minmax(0, 1fr);
         width: min(100%, 1440px);
-        min-height: calc(100vh - clamp(3rem, 6vw, 6rem));
-        padding: clamp(1.75rem, 3vw, 3rem);
-        column-gap: clamp(2.5rem, 5vw, 5.5rem);
+        height: calc(100dvh - clamp(1.5rem, 4vh, 3rem));
+        min-height: 0;
+        padding: clamp(1.25rem, 2.6vw, 2.5rem);
+        overflow: hidden;
+        column-gap: clamp(2rem, 4vw, 4.5rem);
         align-content: start;
     }
 
     .app-intro {
         grid-area: intro;
+        margin-bottom: 1rem;
     }
 
     .capture-guidance {
         grid-area: guidance;
+        margin-bottom: 1rem;
     }
 
-    #uploadForm {
-        grid-area: form;
+    .upload-zone {
+        grid-column: 2;
+        grid-row: 1 / -1;
+        align-self: center;
+        min-width: 0;
     }
 
-    .status-stack {
-        grid-area: status;
-    }
-
-    .result-heading {
-        grid-area: result-title;
-    }
-
-    .result-details {
-        grid-area: details;
-    }
-
-    #resultContainer {
-        grid-area: visual;
-        position: sticky;
-        top: clamp(1.5rem, 3vw, 3rem);
+    .card.has-result .upload-zone {
+        grid-area: controls;
         align-self: start;
     }
 
     .result-heading {
-        margin-top: 1.75rem;
+        grid-area: result-title;
+        margin-top: 0.8rem;
+    }
+
+    .result-details {
+        grid-area: details;
+        min-height: 0;
+        padding-right: 0.6rem;
+        overflow-y: auto;
+        scrollbar-color: rgba(135, 247, 199, 0.35) transparent;
+        scrollbar-width: thin;
+    }
+
+    #resultContainer {
+        grid-area: visual;
+        align-self: stretch;
+        min-height: 0;
+        height: 100%;
+    }
+
+    .result-figure {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+        min-height: 0;
+        height: 100%;
+    }
+
+    #resultImage {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        object-fit: contain;
     }
 
     .meaning-panel {
@@ -541,6 +653,48 @@ button.refine-button {
 
     .upload-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@keyframes text-enter {
+    from {
+        opacity: 0;
+        transform: translateX(-16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes controls-enter {
+    from {
+        opacity: 0;
+        transform: translateX(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes scan-glow {
+    0%,
+    18% {
+        opacity: 0.2;
+        transform: translateX(-38%);
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+
+    82%,
+    100% {
+        opacity: 0.2;
+        transform: translateX(38%);
     }
 }
 

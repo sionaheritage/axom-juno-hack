@@ -11,12 +11,12 @@
 <body>
     <main class="card">
         <header class="app-intro">
-            <p class="eyebrow">Biomechanical analysis // EMS placement</p>
-            <h1>EMS Muscle Mapper</h1>
-            <p>Upload a relaxed photo and a tensed photo from the same angle to calculate optimal EMS pad placement.</p>
+            <p class="eyebrow text-enter enter-1">Biomechanical analysis // EMS placement</p>
+            <h1 class="text-enter enter-2">EMS Muscle Mapper</h1>
+            <p class="text-enter enter-3">Upload a relaxed photo and a tensed photo from the same angle to calculate optimal EMS pad placement.</p>
         </header>
 
-        <section class="capture-guidance" aria-labelledby="captureGuidanceTitle">
+        <section class="capture-guidance text-enter enter-4" aria-labelledby="captureGuidanceTitle">
             <h2 id="captureGuidanceTitle">For the most accurate result</h2>
             <ul>
                 <li>Photograph one person only, with no people visible in the background.</li>
@@ -26,29 +26,36 @@
             </ul>
         </section>
 
-        <form id="uploadForm">
-            <div class="upload-grid">
-                <div class="upload-group">
-                    <label for="lax">1. Lax Arm (Relaxed)</label>
-                    <input type="file" id="lax" accept="image/*" required>
+        <section class="upload-zone" aria-label="Image inputs">
+            <form id="uploadForm">
+                <div class="upload-grid">
+                    <div class="upload-group">
+                        <label for="lax">1. Lax Arm (Relaxed)</label>
+                        <input type="file" id="lax" accept="image/*" required>
+                    </div>
+                    <div class="upload-group">
+                        <label for="flexed">2. Flexed Arm (Tensed)</label>
+                        <input type="file" id="flexed" accept="image/*" required>
+                    </div>
                 </div>
-                <div class="upload-group">
-                    <label for="flexed">2. Flexed Arm (Tensed)</label>
-                    <input type="file" id="flexed" accept="image/*" required>
-                </div>
-            </div>
-            <button type="submit">Analyze Muscle &amp; Map Pads</button>
-        </form>
+                <button type="submit">Analyze Muscle &amp; Map Pads</button>
+            </form>
 
-        <div class="status-stack">
-            <div class="loading" id="loadingState">Analyzing biomechanics (this takes a few seconds)...</div>
-            <div class="error" id="errorState" role="alert"></div>
-        </div>
+            <button class="change-images-button" id="changeImagesButton" type="button" hidden>
+                Change images
+            </button>
+
+            <div class="status-stack">
+                <div class="loading" id="loadingState">Analyzing biomechanics (this takes a few seconds)...</div>
+                <div class="error" id="errorState" role="alert"></div>
+            </div>
+        </section>
 
         <h2 class="result-heading" id="resultHeading" hidden>EMS Pad Mapping</h2>
 
         <div id="resultContainer">
             <figure class="result-figure">
+                <span class="frame-label" aria-hidden="true">Analysed output</span>
                 <img id="resultImage" src="" alt="EMS Output">
                 <figcaption class="result-caption" id="altText"></figcaption>
             </figure>

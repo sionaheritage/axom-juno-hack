@@ -240,6 +240,10 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertIn("What does this mean?", response.text)
         self.assertIn('id="resultHeading"', response.text)
         self.assertIn('id="resultDetails"', response.text)
+        self.assertIn('class="upload-zone"', response.text)
+        self.assertIn('id="changeImagesButton"', response.text)
+        self.assertIn('class="frame-label"', response.text)
+        self.assertIn("Analysed output", response.text)
 
     def test_styles_include_neon_palette_and_wide_split_layout(self):
         response = TestClient(main.app).get("/static/css/style.css")
@@ -247,9 +251,32 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("--signal: #87f7c7", response.text)
         self.assertIn("@media (min-width: 1100px)", response.text)
-        self.assertIn('"intro visual"', response.text)
+        self.assertIn('"intro controls"', response.text)
+        self.assertIn('"guidance visual"', response.text)
         self.assertIn('"details visual"', response.text)
+        self.assertIn("height: 100dvh", response.text)
+        self.assertIn("object-fit: contain", response.text)
+        self.assertIn("@keyframes text-enter", response.text)
+        self.assertIn("@keyframes controls-enter", response.text)
+        self.assertIn(".card.has-result .upload-zone", response.text)
+        self.assertIn("grid-row: 1 / -1", response.text)
+        self.assertIn("@keyframes scan-glow", response.text)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", response.text)
         self.assertIn("@media (max-width: 640px)", response.text)
+
+    def test_frontend_resets_result_and_restores_uploads(self):
+        response = TestClient(main.app).get("/static/js/app.js")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("function clearResult()", response.text)
+        self.assertIn("changeImagesButton.addEventListener('click'", response.text)
+        self.assertIn("uploadForm.hidden = true", response.text)
+        self.assertIn("changeImagesButton.hidden = false", response.text)
+        self.assertIn("card.classList.add('has-result')", response.text)
+        self.assertIn("card.classList.remove('has-result')", response.text)
+        self.assertIn("resultImage.removeAttribute('src')", response.text)
+        self.assertIn("laxInput.value = ''", response.text)
+        self.assertIn("flexedInput.value = ''", response.text)
 
     def test_refine_returns_new_rendered_mapping(self):
         analysis = MuscleAnalysisResult.model_validate(

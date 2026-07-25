@@ -1,4 +1,8 @@
 const uploadForm = document.getElementById('uploadForm');
+const card = document.querySelector('.card');
+const laxInput = document.getElementById('lax');
+const flexedInput = document.getElementById('flexed');
+const changeImagesButton = document.getElementById('changeImagesButton');
 const loadingState = document.getElementById('loadingState');
 const errorState = document.getElementById('errorState');
 const resultContainer = document.getElementById('resultContainer');
@@ -50,6 +54,38 @@ function resetFeedback(message = '') {
     setFeedbackStatus(message);
 }
 
+function replayResultTextAnimation() {
+    const animatedItems = [
+        resultHeading,
+        ...resultDetails.querySelectorAll('.meaning-panel, .feedback-panel'),
+    ];
+    animatedItems.forEach((item) => item.classList.remove('is-entering'));
+    void resultDetails.offsetWidth;
+    animatedItems.forEach((item) => item.classList.add('is-entering'));
+}
+
+function clearResult() {
+    card.classList.remove('has-result');
+    resultContainer.style.display = 'none';
+    resultHeading.hidden = true;
+    resultDetails.hidden = true;
+    resultImage.classList.remove('is-visible');
+    resultImage.removeAttribute('src');
+    resultImage.alt = 'EMS Output';
+    altText.textContent = '';
+    currentResult = null;
+    currentLaxFile = null;
+    currentFlexedFile = null;
+    laxInput.value = '';
+    flexedInput.value = '';
+    loadingState.style.display = 'none';
+    errorState.style.display = 'none';
+    errorState.textContent = '';
+    uploadForm.hidden = false;
+    changeImagesButton.hidden = true;
+    resetFeedback();
+}
+
 async function displayResult(result) {
     currentResult = result;
     resultImage.classList.remove('is-visible');
@@ -59,9 +95,13 @@ async function displayResult(result) {
         await resultImage.decode().catch(() => {});
     }
     altText.textContent = result.alt_text;
+    card.classList.add('has-result');
     resultContainer.style.display = 'block';
     resultHeading.hidden = false;
     resultDetails.hidden = false;
+    uploadForm.hidden = true;
+    changeImagesButton.hidden = false;
+    replayResultTextAnimation();
     requestAnimationFrame(() => {
         requestAnimationFrame(() => resultImage.classList.add('is-visible'));
     });
@@ -85,8 +125,8 @@ async function recordFeedback(accurate) {
 uploadForm.onsubmit = async (event) => {
     event.preventDefault();
 
-    currentLaxFile = document.getElementById('lax').files[0];
-    currentFlexedFile = document.getElementById('flexed').files[0];
+    currentLaxFile = laxInput.files[0];
+    currentFlexedFile = flexedInput.files[0];
 
     const formData = new FormData();
     formData.append('lax_image', currentLaxFile);
@@ -96,6 +136,7 @@ uploadForm.onsubmit = async (event) => {
     resultContainer.style.display = 'none';
     resultHeading.hidden = true;
     resultDetails.hidden = true;
+    changeImagesButton.hidden = true;
     errorState.style.display = 'none';
     currentResult = null;
     resetFeedback();
@@ -117,14 +158,19 @@ uploadForm.onsubmit = async (event) => {
     }
 };
 
+changeImagesButton.addEventListener('click', () => {
+    clearResult();
+    laxInput.focus();
+});
+
 thumbUpButton.addEventListener('click', async () => {
     setFeedbackSelection('up');
     correctionPanel.hidden = true;
-    setFeedbackStatus('Sending feedback…');
+    setFeedbackStatus('Sending feedback...');
 
     try {
         await recordFeedback(true);
-        setFeedbackStatus('Thanks — feedback recorded.');
+        setFeedbackStatus('Thanks - feedback recorded.');
     } catch (error) {
         console.error('Feedback error:', error);
         setFeedbackStatus('Feedback could not be sent. Please try again.', true);
@@ -164,8 +210,8 @@ submitCorrection.addEventListener('click', async () => {
     submitCorrection.disabled = true;
     thumbUpButton.disabled = true;
     thumbDownButton.disabled = true;
-    submitCorrection.textContent = 'Refining…';
-    setFeedbackStatus('Revising coordinates with your feedback…');
+    submitCorrection.textContent = 'Refining...';
+    setFeedbackStatus('Revising coordinates with your feedback...');
 
     try {
         const response = await fetch('/refine', {
@@ -174,7 +220,7 @@ submitCorrection.addEventListener('click', async () => {
         });
         const result = await readResponse(response);
         await displayResult(result);
-        resetFeedback('Mapping updated — please review it again.');
+        resetFeedback('Mapping updated - please review it again.');
     } catch (error) {
         console.error('Refinement error:', error);
         setFeedbackStatus(
