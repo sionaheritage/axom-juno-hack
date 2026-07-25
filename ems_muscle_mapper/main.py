@@ -30,7 +30,9 @@ from services.image_normalizer import InvalidImageError, normalize_image_orienta
 from schemas import AccuracyFeedback, MuscleAnalysisResult
 
 logger = logging.getLogger(__name__)
-LANDING_PAGE = Path(__file__).resolve().parent.parent / "index.html"
+SITE_ROOT = Path(__file__).resolve().parent.parent
+LANDING_PAGE = SITE_ROOT / "index.html"
+SITE_STATIC_DIR = SITE_ROOT / "static"
 mapper_app = FastAPI(title="EMS Muscle Mapper")
 mapper_app.mount("/static", StaticFiles(directory="templates"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -307,6 +309,7 @@ async def refine_images(
 
 
 app = FastAPI(title="EMS Muscle Tools")
+app.mount("/static", StaticFiles(directory=SITE_STATIC_DIR), name="site-static")
 
 
 @app.get("/")
