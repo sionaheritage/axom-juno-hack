@@ -18,9 +18,11 @@ PNG_BYTES = b"\x89PNG\r\n\x1a\ntest-image"
 class APIIntegrationTests(unittest.TestCase):
     def setUp(self):
         self.original_client = vlm_analyzer._client
+        main._clear_result_cache()
 
     def tearDown(self):
         vlm_analyzer._client = self.original_client
+        main._clear_result_cache()
 
     def test_missing_api_key_returns_service_unavailable(self):
         vlm_analyzer._client = None
@@ -143,11 +145,62 @@ class APIIntegrationTests(unittest.TestCase):
             content[2]["image_url"]["url"].startswith("data:image/jpeg;base64,")
         )
         self.assertEqual(captured["model"], "gpt-4o")
+        self.assertEqual(captured["temperature"], 0.2)
+        self.assertEqual(captured["seed"], 42)
         self.assertEqual(content[1]["image_url"]["detail"], "high")
         self.assertEqual(content[2]["image_url"]["detail"], "high")
         self.assertIn("subject's right arm", content[0]["text"])
         self.assertIn("forearm bends toward the right side", content[0]["text"])
+        normalized_prompt = " ".join(content[0]["text"].split())
+        self.assertIn("do not space them evenly", normalized_prompt)
+        self.assertIn("visible left or right arm edge", normalized_prompt)
+        self.assertIn("Never return fewer than 5 corners", normalized_prompt)
+        self.assertIn("rigid horizontal or vertical column", normalized_prompt)
         self.assertIs(result, parsed)
+
+    def test_identical_image_pair_returns_cached_result(self):
+        analysis = MuscleAnalysisResult(
+            movement_detected="Elbow flexion", muscles=[]
+        )
+
+        def fake_arm_region(image_bytes, preferred_side=None):
+            return ArmRegion(
+                image_bytes=image_bytes,
+                side=preferred_side or "right",
+                left=0,
+                top=0,
+                right=100,
+                bottom=100,
+                source_width=100,
+                source_height=100,
+            )
+
+        with (
+            patch.object(
+                main, "normalize_image_orientation", side_effect=lambda value: value
+            ),
+            patch.object(
+                main, "extract_arm_region", side_effect=fake_arm_region
+            ) as extract,
+            patch.object(
+                main, "analyze_muscle_movement", return_value=analysis
+            ) as analyze,
+            patch.object(main, "draw_ems_ui", return_value=b"cached-jpeg") as draw,
+        ):
+            client = TestClient(main.app)
+            files = {
+                "lax_image": ("lax.jpg", JPEG_BYTES, "image/jpeg"),
+                "flexed_image": ("flexed.jpg", PNG_BYTES, "image/png"),
+            }
+            first = client.post("/analyze", files=files)
+            second = client.post("/analyze", files=files)
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(first.json(), second.json())
+        self.assertEqual(extract.call_count, 2)
+        analyze.assert_called_once()
+        draw.assert_called_once()
 
     def test_api_key_is_read_from_the_environment(self):
         sentinel_client = object()

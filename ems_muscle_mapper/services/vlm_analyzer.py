@@ -98,10 +98,15 @@ def analyze_muscle_movement(
        the anterior/flexion side of the upper arm and triceps is posterior,
        opposite the elbow's closing direction. Never swap a correctly located
        biceps region with a triceps label.
-    3. In the SECOND CROP, trace each affected visible muscle region with 6-8
-       polygon vertices ordered clockwise around its OUTER boundary. Cover the
-       full visible length and width of the muscle belly. Follow the curved arm
-       contour; do not return a small box or thin shape near the crop center.
+    3. In the SECOND CROP, trace each affected visible muscle region with 5-10
+       polygon vertices ordered clockwise around its OUTER boundary. Never
+       return fewer than 5 corners. Cover the
+       full visible length and width of the muscle belly. Place vertices where
+       the visible arm or muscle outline actually changes direction; do not
+       space them evenly and do not regularize the outline into a rectangle,
+       trapezoid, or other symmetrical shape. Follow the irregular curved arm
+       silhouette, including the visible left or right arm edge when the muscle
+       reaches it. Do not return a small box or thin shape near the crop center.
     4. Return all polygon and EMS pad coordinates relative to the SECOND CROP:
        - origin (0, 0) is exactly the TOP-LEFT corner
        - x=0 is the LEFT edge and x=1 is the RIGHT edge
@@ -113,11 +118,16 @@ def analyze_muscle_movement(
          the target muscle pixel is actually at the center
        - every vertex and pad must lie on visible upper-arm pixels, not at a
          generic anatomical location
-    5. Return at least a proximal and distal EMS pad for each muscle.
+    5. Return at least a proximal and distal EMS pad for each muscle. Place pads
+       at distinct natural positions along the curved muscle belly. Do not put
+       them in a rigid horizontal or vertical column, mirror their coordinates,
+       or use evenly spaced default positions.
     """
     
     response = _get_client().beta.chat.completions.parse(
         model=os.getenv("OPENAI_MODEL", "gpt-4o"),
+        temperature=0.2,
+        seed=42,
         messages=[
             {
                 "role": "user",

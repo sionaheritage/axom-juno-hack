@@ -25,10 +25,15 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
 
         const result = await response.json();
         const resultImage = document.getElementById('resultImage');
-        resultImage.src = `data:image/jpeg;base64,${result.image_base64}`;
+        resultImage.classList.remove('is-visible');
         resultImage.alt = result.alt_text;
+        resultImage.src = `data:image/jpeg;base64,${result.image_base64}`;
+        await resultImage.decode().catch(() => {});
         document.getElementById('altText').value = result.alt_text;
         document.getElementById('resultContainer').style.display = 'block';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => resultImage.classList.add('is-visible'));
+        });
     } catch (error) {
         console.error('Error:', error);
         const errorState = document.getElementById('errorState');

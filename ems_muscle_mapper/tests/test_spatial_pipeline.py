@@ -74,7 +74,7 @@ class SpatialPipelineTests(unittest.TestCase):
 
         self.assertEqual(_infer_flexion_side(shoulder, elbow, wrist), "right")
 
-    def test_refinement_enlarges_shape_and_corrects_reversed_labels(self):
+    def test_refinement_preserves_shape_and_corrects_reversed_labels(self):
         region = ArmRegion(
             image_bytes=b"crop",
             side="right",
@@ -123,12 +123,88 @@ class SpatialPipelineTests(unittest.TestCase):
 
         self.assertEqual(refined.muscles[0].name, "Triceps")
         self.assertEqual(refined.muscles[1].name, "Biceps")
-        for muscle in refined.muscles:
-            xs = [point.x for point in muscle.polygon_vertices_normalized]
-            ys = [point.y for point in muscle.polygon_vertices_normalized]
-            self.assertGreaterEqual((max(xs) - min(xs)) * (max(ys) - min(ys)), 0.079)
+        for original_muscle, refined_muscle in zip(
+            analysis.muscles, refined.muscles
+        ):
+            original_points = [
+                (point.x, point.y)
+                for point in original_muscle.polygon_vertices_normalized
+            ]
+            refined_points = [
+                (point.x, point.y)
+                for point in refined_muscle.polygon_vertices_normalized
+            ]
+            self.assertEqual(refined_points, original_points)
         # Refinement does not mutate the raw API result.
         self.assertEqual(analysis.muscles[0].name, "Biceps")
+
+    def test_biceps_outer_chain_follows_irregular_visible_arm_edge(self):
+        image = np.zeros((400, 200, 3), dtype=np.uint8)
+        arm_contour = np.array(
+            [
+                [35, 35],
+                [160, 35],
+                [170, 150],
+                [155, 250],
+                [142, 365],
+                [40, 365],
+            ],
+            dtype=np.int32,
+        )
+        cv2.fillPoly(image, [arm_contour], (230, 230, 230))
+        encoded, buffer = cv2.imencode(".jpg", image)
+        self.assertTrue(encoded)
+
+        region = ArmRegion(
+            image_bytes=buffer.tobytes(),
+            side="right",
+            left=0,
+            top=0,
+            right=200,
+            bottom=400,
+            source_width=200,
+            source_height=400,
+            shoulder_crop=(0.5, 0.1),
+            elbow_crop=(0.5, 0.9),
+            wrist_crop=(0.9, 0.7),
+            flexion_side="right",
+        )
+        analysis = MuscleAnalysisResult.model_validate(
+            {
+                "movement_detected": "Elbow flexion",
+                "muscles": [
+                    {
+                        "name": "Biceps",
+                        "polygon_vertices_normalized": [
+                            {"x": 0.45, "y": 0.2},
+                            {"x": 0.62, "y": 0.2},
+                            {"x": 0.62, "y": 0.5},
+                            {"x": 0.62, "y": 0.8},
+                            {"x": 0.45, "y": 0.8},
+                            {"x": 0.38, "y": 0.5},
+                        ],
+                        "color_hex": "#ff0000",
+                        "ems_pads_normalized": [
+                            {"label": "Proximal", "x": 0.6, "y": 0.25},
+                            {"label": "Distal", "x": 0.6, "y": 0.7},
+                        ],
+                    }
+                ],
+            }
+        )
+
+        refined = region.refine_crop_analysis(analysis)
+        refined_points = refined.muscles[0].polygon_vertices_normalized
+        outer_xs = [point.x for point in refined_points[:4]]
+
+        self.assertGreater(min(outer_xs), 0.69)
+        self.assertGreater(max(outer_xs) - min(outer_xs), 0.05)
+        self.assertEqual(refined_points[4].x, 0.45)
+        self.assertEqual(refined_points[5].x, 0.38)
+        proximal, distal = refined.muscles[0].ems_pads_normalized
+        self.assertGreater(proximal.x, distal.x)
+        self.assertAlmostEqual(proximal.y, 0.25, delta=0.015)
+        self.assertAlmostEqual(distal.y, 0.7, delta=0.015)
 
     def test_crop_coordinates_map_back_to_source(self):
         crop = ArmRegion(

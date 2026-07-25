@@ -95,19 +95,79 @@ class ArmRegion:
     def refine_crop_analysis(
         self, analysis: MuscleAnalysisResult
     ) -> MuscleAnalysisResult:
-        """
-        Preserve model contours while correcting labels and undersized polygons.
-
-        The VLM remains responsible for the actual contour. Small center-biased
-        polygons are expanded around their own centroid, retaining their vertex
-        order and shape instead of replacing them with a generic rectangle.
-        """
+        """Preserve the model's natural contour while correcting muscle labels."""
         refined = analysis.model_copy(deep=True)
         self._correct_biceps_triceps_labels(refined)
-
-        for muscle in refined.muscles:
-            _expand_small_polygon(muscle.polygon_vertices_normalized)
+        self._snap_named_muscles_to_arm_edge(refined)
         return refined
+
+    def _snap_named_muscles_to_arm_edge(
+        self, analysis: MuscleAnalysisResult
+    ) -> None:
+        """
+        Move only each muscle's outer polygon chain onto the visible arm edge.
+
+        This retains the model's irregular vertex order and inner contour while
+        avoiding regular, center-biased polygons that stop short of the skin
+        silhouette.
+        """
+        if (
+            not self.shoulder_crop
+            or not self.elbow_crop
+            or self.flexion_side == "uncertain"
+        ):
+            return
+
+        image_array = np.frombuffer(self.image_bytes, np.uint8)
+        image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+        if image is None:
+            return
+
+        height, width = image.shape[:2]
+        shoulder = np.array(
+            [self.shoulder_crop[0] * width, self.shoulder_crop[1] * height],
+            dtype=float,
+        )
+        elbow = np.array(
+            [self.elbow_crop[0] * width, self.elbow_crop[1] * height],
+            dtype=float,
+        )
+        axis = elbow - shoulder
+        axis_length = float(np.linalg.norm(axis))
+        if axis_length < 2.0:
+            return
+
+        crop_right_normal = np.array([axis[1], -axis[0]]) / axis_length
+        lab_image = cv2.GaussianBlur(
+            cv2.cvtColor(image, cv2.COLOR_BGR2LAB), (0, 0), 2
+        )
+
+        for muscle in analysis.muscles:
+            name = muscle.name.lower()
+            if "bicep" in name:
+                edge_side = self.flexion_side
+            elif "tricep" in name:
+                edge_side = "left" if self.flexion_side == "right" else "right"
+            else:
+                continue
+
+            _snap_outer_polygon_chain(
+                muscle.polygon_vertices_normalized,
+                lab_image,
+                shoulder,
+                axis,
+                crop_right_normal,
+                edge_side,
+            )
+            _align_pads_to_polygon_centerline(
+                muscle.polygon_vertices_normalized,
+                muscle.ems_pads_normalized,
+                shoulder,
+                axis,
+                crop_right_normal,
+                width,
+                height,
+            )
 
     def _correct_biceps_triceps_labels(
         self, analysis: MuscleAnalysisResult
@@ -251,41 +311,6 @@ def extract_arm_region(
     )
 
 
-def _expand_small_polygon(
-    points,
-    minimum_bbox_area: float = 0.08,
-    minimum_major_span: float = 0.45,
-    maximum_scale: float = 2.2,
-) -> None:
-    """Expand only undersized polygons, preserving their contour and centroid."""
-    if len(points) < 3:
-        return
-
-    coordinates = np.array([[point.x, point.y] for point in points], dtype=float)
-    minimum = coordinates.min(axis=0)
-    maximum = coordinates.max(axis=0)
-    spans = maximum - minimum
-    bbox_area = float(spans[0] * spans[1])
-    major_span = float(max(spans))
-
-    area_scale = (
-        np.sqrt(minimum_bbox_area / bbox_area) if bbox_area > 1e-8 else maximum_scale
-    )
-    span_scale = (
-        minimum_major_span / major_span if major_span > 1e-8 else maximum_scale
-    )
-    scale = min(maximum_scale, max(1.0, area_scale, span_scale))
-    if scale <= 1.0:
-        return
-
-    centroid = coordinates.mean(axis=0)
-    expanded = centroid + (coordinates - centroid) * scale
-    expanded = np.clip(expanded, 0.01, 0.99)
-    for point, (x, y) in zip(points, expanded):
-        point.x = float(x)
-        point.y = float(y)
-
-
 def _infer_flexion_side(
     shoulder: np.ndarray, elbow: np.ndarray, wrist: np.ndarray
 ) -> ImageSide:
@@ -300,6 +325,168 @@ def _infer_flexion_side(
     if abs(signed_distance) < max(5.0, length * 0.03):
         return "uncertain"
     return "right" if signed_distance > 0 else "left"
+
+
+def _snap_outer_polygon_chain(
+    points,
+    lab_image: np.ndarray,
+    shoulder: np.ndarray,
+    axis: np.ndarray,
+    crop_right_normal: np.ndarray,
+    edge_side: Literal["left", "right"],
+) -> None:
+    """Snap the outward-facing polygon chain to real image-edge gradients."""
+    if len(points) < 4:
+        return
+
+    height, width = lab_image.shape[:2]
+    coordinates = np.array(
+        [[point.x * width, point.y * height] for point in points], dtype=float
+    )
+    axis_squared = float(np.dot(axis, axis))
+    axis_length = float(np.sqrt(axis_squared))
+    axial_positions = ((coordinates - shoulder) @ axis) / axis_squared
+    lateral_positions = (coordinates - shoulder) @ crop_right_normal
+    side_sign = 1.0 if edge_side == "right" else -1.0
+
+    proximal_index = int(np.argmin(axial_positions))
+    distal_index = int(np.argmax(axial_positions))
+    if proximal_index == distal_index:
+        return
+
+    forward_chain = _cyclic_chain_indices(
+        proximal_index, distal_index, len(points), step=1
+    )
+    backward_chain = _cyclic_chain_indices(
+        proximal_index, distal_index, len(points), step=-1
+    )
+
+    def chain_score(indices: list[int]) -> float:
+        interior = indices[1:-1] or indices
+        return float(
+            np.mean([lateral_positions[index] * side_sign for index in interior])
+        )
+
+    outer_chain = max((forward_chain, backward_chain), key=chain_score)
+    direction = crop_right_normal * side_sign
+
+    for index in outer_chain:
+        axial_position = float(axial_positions[index])
+        if not 0.05 <= axial_position <= 0.9:
+            continue
+
+        axis_point = shoulder + axis * axial_position
+        edge_point = _find_arm_edge_along_normal(
+            lab_image, axis_point, direction, axis_length
+        )
+        if edge_point is None:
+            continue
+
+        current_outward_distance = float(
+            np.dot(coordinates[index] - axis_point, direction)
+        )
+        edge_outward_distance = float(np.dot(edge_point - axis_point, direction))
+        # Never pull a model vertex inward; the detected edge is used only to
+        # extend a center-biased outline toward the visible silhouette.
+        if edge_outward_distance <= current_outward_distance + axis_length * 0.015:
+            continue
+
+        point = points[index]
+        point.x = float(np.clip(edge_point[0] / width, 0.0, 1.0))
+        point.y = float(np.clip(edge_point[1] / height, 0.0, 1.0))
+
+
+def _cyclic_chain_indices(
+    start: int, end: int, count: int, step: Literal[-1, 1]
+) -> list[int]:
+    indices = [start]
+    current = start
+    while current != end and len(indices) <= count:
+        current = (current + step) % count
+        indices.append(current)
+    return indices
+
+
+def _find_arm_edge_along_normal(
+    lab_image: np.ndarray,
+    axis_point: np.ndarray,
+    direction: np.ndarray,
+    axis_length: float,
+) -> np.ndarray | None:
+    """Find the strongest smoothed colour edge moving outward from the arm axis."""
+    height, width = lab_image.shape[:2]
+    minimum_distance = max(3, int(round(axis_length * 0.06)))
+    maximum_distance = max(
+        minimum_distance + 2, int(round(axis_length * 0.42))
+    )
+    distances = np.arange(minimum_distance, maximum_distance, dtype=float)
+    samples = axis_point + distances[:, None] * direction
+    valid = (
+        (samples[:, 0] >= 1)
+        & (samples[:, 0] < width - 1)
+        & (samples[:, 1] >= 1)
+        & (samples[:, 1] < height - 1)
+    )
+    samples = samples[valid]
+    if len(samples) < 8:
+        return None
+
+    pixels = np.rint(samples).astype(int)
+    colors = lab_image[pixels[:, 1], pixels[:, 0]].astype(float)
+    gradients = np.linalg.norm(np.diff(colors, axis=0), axis=1)
+    gradients = np.convolve(gradients, np.ones(7) / 7.0, mode="same")
+    edge_index = int(np.argmax(gradients))
+    if float(gradients[edge_index]) < 2.5:
+        return None
+
+    # Keep the polygon just inside the detected boundary so the overlay remains
+    # on visible arm pixels rather than spilling onto clothing or background.
+    edge_point = samples[min(edge_index + 1, len(samples) - 1)] - direction * 2.0
+    return edge_point
+
+
+def _align_pads_to_polygon_centerline(
+    polygon_points,
+    pads,
+    shoulder: np.ndarray,
+    axis: np.ndarray,
+    crop_right_normal: np.ndarray,
+    width: int,
+    height: int,
+) -> None:
+    """Follow the irregular polygon centreline without changing proximal/distal level."""
+    if len(polygon_points) < 3 or not pads:
+        return
+
+    contour = np.array(
+        [[point.x * width, point.y * height] for point in polygon_points],
+        dtype=np.float32,
+    ).reshape((-1, 1, 2))
+    axis_squared = float(np.dot(axis, axis))
+    axis_length = float(np.sqrt(axis_squared))
+    distances = np.linspace(-axis_length * 0.45, axis_length * 0.45, 361)
+
+    for pad in pads:
+        current = np.array([pad.x * width, pad.y * height], dtype=float)
+        axial_position = float(np.dot(current - shoulder, axis) / axis_squared)
+        axis_point = shoulder + axis * axial_position
+        samples = axis_point + distances[:, None] * crop_right_normal
+        inside = [
+            sample
+            for sample in samples
+            if 0 <= sample[0] < width
+            and 0 <= sample[1] < height
+            and cv2.pointPolygonTest(
+                contour, (float(sample[0]), float(sample[1])), False
+            )
+            >= 0
+        ]
+        if len(inside) < 3:
+            continue
+
+        center = (inside[0] + inside[-1]) / 2.0
+        pad.x = float(np.clip(center[0] / width, 0.0, 1.0))
+        pad.y = float(np.clip(center[1] / height, 0.0, 1.0))
 
 
 def _format_point(point: tuple[float, float]) -> str:

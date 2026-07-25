@@ -1,6 +1,9 @@
 import os
 import logging
 import base64
+import hashlib
+from collections import OrderedDict
+from threading import Lock
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -25,6 +28,26 @@ from services.image_normalizer import InvalidImageError, normalize_image_orienta
 logger = logging.getLogger(__name__)
 app = FastAPI(title="EMS Muscle Mapper")
 app.mount("/static", StaticFiles(directory="templates"), name="static")
+
+_CACHE_MAX_PAIRS = 32
+_result_cache: OrderedDict[str, dict[str, str]] = OrderedDict()
+_result_cache_lock = Lock()
+
+
+def _image_pair_cache_key(lax_bytes: bytes, flexed_bytes: bytes) -> str:
+    """Hash the ordered normalized image pair without retaining the uploads."""
+    digest = hashlib.sha256()
+    for image_bytes in (lax_bytes, flexed_bytes):
+        digest.update(len(image_bytes).to_bytes(8, "big"))
+        digest.update(image_bytes)
+    return digest.hexdigest()
+
+
+def _clear_result_cache() -> None:
+    """Clear cached results (primarily for tests and controlled reloads)."""
+    with _result_cache_lock:
+        _result_cache.clear()
+
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
@@ -54,32 +77,47 @@ async def process_images(lax_image: UploadFile = File(...), flexed_image: Upload
         # service now sees the exact same upright pixels.
         normalized_lax = normalize_image_orientation(lax_bytes)
         normalized_flexed = normalize_image_orientation(flexed_bytes)
+        cache_key = _image_pair_cache_key(normalized_lax, normalized_flexed)
 
-        # 2. Use the flexed image to choose an arm, then require the same
-        # anatomical side in the relaxed image.
-        flexed_region = extract_arm_region(normalized_flexed)
-        lax_region = extract_arm_region(
-            normalized_lax, preferred_side=flexed_region.side
-        )
+        # Keep lookup and generation together so simultaneous identical uploads
+        # cannot produce two different results before the first is cached.
+        with _result_cache_lock:
+            cached_result = _result_cache.get(cache_key)
+            if cached_result is not None:
+                _result_cache.move_to_end(cache_key)
+                return dict(cached_result)
 
-        # 3. Ask the VLM about the compact arm crops, then map its crop-relative
-        # coordinates back to the full, normalized flexed image.
-        crop_analysis = analyze_muscle_movement(
-            lax_region.image_bytes,
-            flexed_region.image_bytes,
-            arm_side=flexed_region.side,
-            pose_context=flexed_region.pose_prompt_context(),
-        )
-        refined_crop_analysis = flexed_region.refine_crop_analysis(crop_analysis)
-        analysis_result = flexed_region.map_analysis_to_source(refined_crop_analysis)
-        
-        # 4. Render onto the same oriented pixels used by YOLO and OpenAI.
-        processed_image = draw_ems_ui(normalized_flexed, analysis_result)
-        
-        return {
-            "image_base64": base64.b64encode(processed_image).decode("ascii"),
-            "alt_text": build_alt_text(analysis_result),
-        }
+            # 2. Use the flexed image to choose an arm, then require the same
+            # anatomical side in the relaxed image.
+            flexed_region = extract_arm_region(normalized_flexed)
+            lax_region = extract_arm_region(
+                normalized_lax, preferred_side=flexed_region.side
+            )
+
+            # 3. Ask the VLM about the compact arm crops, then map its
+            # crop-relative coordinates back to the full normalized image.
+            crop_analysis = analyze_muscle_movement(
+                lax_region.image_bytes,
+                flexed_region.image_bytes,
+                arm_side=flexed_region.side,
+                pose_context=flexed_region.pose_prompt_context(),
+            )
+            refined_crop_analysis = flexed_region.refine_crop_analysis(crop_analysis)
+            analysis_result = flexed_region.map_analysis_to_source(
+                refined_crop_analysis
+            )
+
+            # 4. Render onto the same oriented pixels used by YOLO and OpenAI.
+            processed_image = draw_ems_ui(normalized_flexed, analysis_result)
+            result = {
+                "image_base64": base64.b64encode(processed_image).decode("ascii"),
+                "alt_text": build_alt_text(analysis_result),
+            }
+            _result_cache[cache_key] = result
+            _result_cache.move_to_end(cache_key)
+            while len(_result_cache) > _CACHE_MAX_PAIRS:
+                _result_cache.popitem(last=False)
+            return dict(result)
         
     except (InvalidImageError, ArmNotFoundError, UnsupportedImageError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

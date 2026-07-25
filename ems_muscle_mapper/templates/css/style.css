@@ -27,6 +27,31 @@ p {
     margin-bottom: 1.8rem;
 }
 
+.capture-guidance {
+    margin-bottom: 1.8rem;
+    padding: 1rem 1.2rem;
+    border: 1px solid #c7e2cd;
+    border-radius: 12px;
+    background: #f3faf5;
+    color: #314f39;
+}
+
+.capture-guidance h3 {
+    margin: 0 0 0.65rem;
+    color: #1b5f3d;
+    font-size: 1rem;
+}
+
+.capture-guidance ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    line-height: 1.55;
+}
+
+.capture-guidance li + li {
+    margin-top: 0.35rem;
+}
+
 .upload-group {
     margin-bottom: 1.5rem;
 }
@@ -85,6 +110,18 @@ button:hover {
     max-width: 100%;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transition: opacity 500ms ease-out;
+}
+
+#resultImage.is-visible {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #resultImage {
+        transition: none;
+    }
 }
 
 .loading {
