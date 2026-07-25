@@ -56,7 +56,7 @@ async function displayResult(result) {
     if (typeof resultImage.decode === 'function') {
         await resultImage.decode().catch(() => {});
     }
-    altText.value = result.alt_text;
+    altText.textContent = result.alt_text;
     resultContainer.style.display = 'block';
     requestAnimationFrame(() => {
         requestAnimationFrame(() => resultImage.classList.add('is-visible'));

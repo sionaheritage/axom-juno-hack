@@ -52,8 +52,15 @@ p {
     margin-top: 0.35rem;
 }
 
-.upload-group {
+.upload-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
     margin-bottom: 1.5rem;
+}
+
+.upload-group {
+    min-width: 0;
 }
 
 label {
@@ -65,6 +72,7 @@ label {
 }
 
 input[type="file"] {
+    box-sizing: border-box;
     display: block;
     width: 100%;
     padding: 0.9rem 0.85rem;
@@ -141,23 +149,35 @@ button:hover {
     color: #9b1c1c;
 }
 
-.alt-text-group {
-    margin-top: 1.25rem;
+.result-figure {
+    margin: 0;
+}
+
+.result-caption {
+    margin-top: 0.8rem;
+    color: #425d45;
+    font-size: 0.9rem;
+    font-style: italic;
+    line-height: 1.5;
+    text-align: center;
+    white-space: pre-line;
+}
+
+.meaning-panel {
+    margin-top: 1.5rem;
     text-align: left;
 }
 
-#altText {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 0.9rem;
-    border: 1px solid #b8dbbf;
-    border-radius: 10px;
-    background: #f8fbf8;
-    color: #243b2d;
-    font: inherit;
-    font-size: 1rem;
-    line-height: 1.5;
-    resize: vertical;
+.meaning-panel h3 {
+    margin: 0 0 0.45rem;
+    color: #1b5f3d;
+    font-size: 1.05rem;
+}
+
+.meaning-panel p {
+    margin: 0;
+    color: #425d45;
+    line-height: 1.7;
 }
 
 .feedback-panel {
@@ -261,4 +281,10 @@ button.refine-button {
 
 .feedback-status.is-error {
     color: #9b1c1c;
+}
+
+@media (max-width: 640px) {
+    .upload-grid {
+        grid-template-columns: 1fr;
+    }
 }

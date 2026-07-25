@@ -191,7 +191,10 @@ def draw_ems_ui(image_bytes: bytes, analysis: MuscleAnalysisResult) -> bytes:
 def build_alt_text(analysis: MuscleAnalysisResult) -> str:
     """Build an accessible text description for the annotated image."""
     if not analysis.muscles:
-        return f"Movement detected: {analysis.movement_detected}. No muscles were mapped."
+        return (
+            f"Movement detected: {analysis.movement_detected}.\n"
+            "Highlighted muscles: None."
+        )
 
     muscle_descriptions = []
     for muscle in analysis.muscles:
@@ -204,6 +207,6 @@ def build_alt_text(analysis: MuscleAnalysisResult) -> str:
             muscle_descriptions.append(muscle.name)
 
     return (
-        f"Movement detected: {analysis.movement_detected}. "
+        f"Movement detected: {analysis.movement_detected}.\n"
         f"Highlighted muscles: {'; '.join(muscle_descriptions)}."
     )

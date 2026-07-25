@@ -289,6 +289,7 @@ class SpatialPipelineTests(unittest.TestCase):
         self.assertIn("Bicep flexing", description)
         self.assertIn("Biceps", description)
         self.assertIn("Proximal, Distal", description)
+        self.assertIn("\nHighlighted muscles:", description)
 
     def test_all_pointer_labels_receive_non_overlapping_boxes(self):
         pointer = (250, 200)

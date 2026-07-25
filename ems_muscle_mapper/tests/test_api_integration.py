@@ -235,6 +235,9 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertIn('id="thumbDownButton"', response.text)
         self.assertIn('id="correctionText"', response.text)
         self.assertIn('id="submitCorrection"', response.text)
+        self.assertIn('class="upload-grid"', response.text)
+        self.assertIn("<figcaption", response.text)
+        self.assertIn("What does this mean?", response.text)
 
     def test_refine_returns_new_rendered_mapping(self):
         analysis = MuscleAnalysisResult.model_validate(

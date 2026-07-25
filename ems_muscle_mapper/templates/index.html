@@ -25,13 +25,15 @@
         </section>
 
         <form id="uploadForm">
-            <div class="upload-group">
-                <label for="lax">1. Lax Arm (Relaxed)</label>
-                <input type="file" id="lax" accept="image/*" required>
-            </div>
-            <div class="upload-group">
-                <label for="flexed">2. Flexed Arm (Tensed)</label>
-                <input type="file" id="flexed" accept="image/*" required>
+            <div class="upload-grid">
+                <div class="upload-group">
+                    <label for="lax">1. Lax Arm (Relaxed)</label>
+                    <input type="file" id="lax" accept="image/*" required>
+                </div>
+                <div class="upload-group">
+                    <label for="flexed">2. Flexed Arm (Tensed)</label>
+                    <input type="file" id="flexed" accept="image/*" required>
+                </div>
             </div>
             <button type="submit">Analyze Muscle & Map Pads</button>
         </form>
@@ -41,11 +43,18 @@
 
         <div id="resultContainer">
             <h3>EMS Pad Mapping</h3>
-            <img id="resultImage" src="" alt="EMS Output">
-            <div class="alt-text-group">
-                <label for="altText">Alt text</label>
-                <textarea id="altText" rows="4" readonly></textarea>
-            </div>
+            <figure class="result-figure">
+                <img id="resultImage" src="" alt="EMS Output">
+                <figcaption class="result-caption" id="altText"></figcaption>
+            </figure>
+
+            <section class="meaning-panel" aria-labelledby="meaningTitle">
+                <h3 id="meaningTitle">What does this mean?</h3>
+                <p>Place the EMS pads at the marked proximal and distal points for each highlighted muscle group.
+                    The pads deliver electrical impulses across the muscle, causing it to contract and helping
+                    replicate the detected movement.</p>
+            </section>
+
             <section class="feedback-panel" aria-labelledby="accuracyQuestion">
                 <p class="feedback-question" id="accuracyQuestion">Is this accurate?</p>
                 <div class="feedback-actions" aria-label="Mapping accuracy">
