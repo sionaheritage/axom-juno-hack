@@ -54,6 +54,59 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertIn("OPENAI_API_KEY", response.json()["detail"])
 
+    def test_success_returns_image_and_alt_text_json(self):
+        analysis = MuscleAnalysisResult.model_validate(
+            {
+                "movement_detected": "Elbow flexion",
+                "muscles": [
+                    {
+                        "name": "Biceps",
+                        "polygon_vertices_normalized": [
+                            {"x": 0.1, "y": 0.2},
+                            {"x": 0.2, "y": 0.2},
+                            {"x": 0.2, "y": 0.4},
+                        ],
+                        "color_hex": "#ff0000",
+                        "ems_pads_normalized": [
+                            {"label": "Proximal", "x": 0.15, "y": 0.25}
+                        ],
+                    }
+                ],
+            }
+        )
+
+        def fake_arm_region(image_bytes, preferred_side=None):
+            return ArmRegion(
+                image_bytes=image_bytes,
+                side=preferred_side or "left",
+                left=0,
+                top=0,
+                right=100,
+                bottom=100,
+                source_width=100,
+                source_height=100,
+            )
+
+        with (
+            patch.object(main, "normalize_image_orientation", side_effect=lambda value: value),
+            patch.object(main, "extract_arm_region", side_effect=fake_arm_region),
+            patch.object(main, "analyze_muscle_movement", return_value=analysis),
+            patch.object(main, "draw_ems_ui", return_value=b"annotated-jpeg"),
+        ):
+            response = TestClient(main.app).post(
+                "/analyze",
+                files={
+                    "lax_image": ("lax.jpg", JPEG_BYTES, "image/jpeg"),
+                    "flexed_image": ("flexed.jpg", JPEG_BYTES, "image/jpeg"),
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["image_base64"], "YW5ub3RhdGVkLWpwZWc=")
+        self.assertIn("Elbow flexion", payload["alt_text"])
+        self.assertIn("Biceps", payload["alt_text"])
+
     def test_analyzer_uses_each_image_actual_media_type(self):
         parsed = MuscleAnalysisResult(movement_detected="Elbow flexion", muscles=[])
         captured = {}

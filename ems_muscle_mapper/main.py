@@ -1,7 +1,8 @@
 import os
 import logging
+import base64
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from openai import (
     APIConnectionError,
@@ -18,7 +19,7 @@ from services.vlm_analyzer import (
     UnsupportedImageError,
     analyze_muscle_movement,
 )
-from services.image_processor import draw_ems_ui
+from services.image_processor import build_alt_text, draw_ems_ui
 from services.image_normalizer import InvalidImageError, normalize_image_orientation
 
 logger = logging.getLogger(__name__)
@@ -73,7 +74,10 @@ async def process_images(lax_image: UploadFile = File(...), flexed_image: Upload
         # 4. Render onto the same oriented pixels used by YOLO and OpenAI.
         processed_image = draw_ems_ui(normalized_flexed, analysis_result)
         
-        return Response(content=processed_image, media_type="image/jpeg")
+        return {
+            "image_base64": base64.b64encode(processed_image).decode("ascii"),
+            "alt_text": build_alt_text(analysis_result),
+        }
         
     except (InvalidImageError, ArmNotFoundError, UnsupportedImageError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

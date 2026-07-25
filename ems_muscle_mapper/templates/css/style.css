@@ -5,6 +5,7 @@ body {
     margin: 0 auto;
     background: #eaf6ef;
     color: #193925;
+    font-size: 1rem;
 }
 
 .card {
@@ -35,6 +36,7 @@ label {
     font-weight: 700;
     margin-bottom: 0.6rem;
     color: #23603a;
+    font-size: 1rem;
 }
 
 input[type="file"] {
@@ -100,4 +102,23 @@ button:hover {
     border-radius: 6px;
     background: #fee;
     color: #9b1c1c;
+}
+
+.alt-text-group {
+    margin-top: 1.25rem;
+    text-align: left;
+}
+
+#altText {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.9rem;
+    border: 1px solid #b8dbbf;
+    border-radius: 10px;
+    background: #f8fbf8;
+    color: #243b2d;
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    resize: vertical;
 }

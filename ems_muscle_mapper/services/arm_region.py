@@ -70,7 +70,13 @@ def extract_arm_region(
     preferred_side: ArmSide | None = None,
     confidence_threshold: float = 0.5,
 ) -> ArmRegion:
-    """Crop the best shoulder-elbow-wrist region detected by YOLO Pose."""
+    """
+    Crop the upper-arm region from the best shoulder-elbow-wrist detection.
+
+    Wrist confidence is still required to establish a complete, unambiguous arm,
+    but the VLM crop is constrained to shoulder-to-elbow where the primary
+    elbow-flexion muscles and EMS pads are located.
+    """
     image_array = np.frombuffer(image_bytes, np.uint8)
     image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
     if image is None:
@@ -107,16 +113,19 @@ def extract_arm_region(
     _, side, points = max(candidates, key=lambda candidate: candidate[0])
     source_height, source_width = image.shape[:2]
 
-    shoulder, elbow, wrist = points
-    arm_length = float(
-        np.linalg.norm(shoulder - elbow) + np.linalg.norm(elbow - wrist)
-    )
-    padding = max(24, int(round(arm_length * 0.35)))
+    shoulder, elbow, _wrist = points
+    crop_points = np.array([shoulder, elbow])
+    upper_arm_length = float(np.linalg.norm(shoulder - elbow))
+    padding = max(24, int(round(upper_arm_length * 0.22)))
 
-    left = max(0, int(np.floor(np.min(points[:, 0]))) - padding)
-    top = max(0, int(np.floor(np.min(points[:, 1]))) - padding)
-    right = min(source_width, int(np.ceil(np.max(points[:, 0]))) + padding + 1)
-    bottom = min(source_height, int(np.ceil(np.max(points[:, 1]))) + padding + 1)
+    left = max(0, int(np.floor(np.min(crop_points[:, 0]))) - padding)
+    top = max(0, int(np.floor(np.min(crop_points[:, 1]))) - padding)
+    right = min(
+        source_width, int(np.ceil(np.max(crop_points[:, 0]))) + padding + 1
+    )
+    bottom = min(
+        source_height, int(np.ceil(np.max(crop_points[:, 1]))) + padding + 1
+    )
 
     if right - left < 2 or bottom - top < 2:
         raise ArmNotFoundError(_arm_error_message(preferred_side))

@@ -79,8 +79,9 @@ def analyze_muscle_movement(
     
     selected_arm = f"the subject's {arm_side} arm" if arm_side else "the same arm"
     prompt = f"""
-    These are tight crops around {selected_arm}. The first image is relaxed and
-    the second image is tensed/flexed. Analyze only the arm in these crops.
+    These are tight crops around the UPPER ARM (shoulder to elbow) of
+    {selected_arm}. The first image is relaxed and the second image is
+    tensed/flexed. Analyze only the upper arm in these crops.
 
     1. Identify the movement by comparing the first and second images.
     2. Identify the primary visibly tensed muscles. Prioritize large arm
@@ -88,12 +89,16 @@ def analyze_muscle_movement(
     3. In the SECOND CROP, trace each affected visible muscle region with 6-8
        polygon vertices ordered clockwise around its boundary.
     4. Return all polygon and EMS pad coordinates relative to the SECOND CROP:
-       - origin (0, 0) is its top-left corner
-       - x increases left-to-right; y increases top-to-bottom
+       - origin (0, 0) is exactly the TOP-LEFT corner
+       - x=0 is the LEFT edge and x=1 is the RIGHT edge
+       - y=0 is the TOP edge and y=1 is the BOTTOM edge
+       - x increases only left-to-right; y increases only top-to-bottom
        - x = pixel_x / crop_width; y = pixel_y / crop_height
        - every value must be between 0.0 and 1.0
-       - every vertex and pad must lie on visible arm pixels, not at a generic
-         anatomical location or at the crop center by default
+       - (0.5, 0.5) means the exact center of the crop; do not use it unless
+         the target muscle pixel is actually at the center
+       - every vertex and pad must lie on visible upper-arm pixels, not at a
+         generic anatomical location
     5. Return at least a proximal and distal EMS pad for each muscle.
     """
     

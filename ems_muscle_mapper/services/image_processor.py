@@ -19,6 +19,7 @@ def draw_ems_ui(image_bytes: bytes, analysis: MuscleAnalysisResult) -> bytes:
     overlay = img.copy()
     
     h, w = img.shape[:2]
+    label_scale = max(0.8, min(1.5, w / 1000.0))
     
     # 1. Draw Transparent Polygons first
     for muscle in analysis.muscles:
@@ -40,10 +41,7 @@ def draw_ems_ui(image_bytes: bytes, analysis: MuscleAnalysisResult) -> bytes:
     alpha = 0.4
     cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0, img)
     
-    # 2. Draw Solid UI Elements (Text & EMS Pads)
-    cv2.putText(img, f"Movement: {analysis.movement_detected}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 3)
-    cv2.putText(img, f"Movement: {analysis.movement_detected}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    
+    # 2. Draw Solid UI Elements (Muscle and EMS pad labels only).
     for muscle in analysis.muscles:
         color_bgr = _hex_to_bgr(muscle.color_hex)
         
@@ -51,8 +49,8 @@ def draw_ems_ui(image_bytes: bytes, analysis: MuscleAnalysisResult) -> bytes:
         if len(muscle.polygon_vertices_normalized) > 0:
             lbl_x = int(muscle.polygon_vertices_normalized[0].x * w)
             lbl_y = int(muscle.polygon_vertices_normalized[0].y * h)
-            cv2.putText(img, muscle.name, (lbl_x, lbl_y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 3)
-            cv2.putText(img, muscle.name, (lbl_x, lbl_y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color_bgr, 2)
+            cv2.putText(img, muscle.name, (lbl_x, lbl_y - 15), cv2.FONT_HERSHEY_SIMPLEX, label_scale, (255, 255, 255), 4)
+            cv2.putText(img, muscle.name, (lbl_x, lbl_y - 15), cv2.FONT_HERSHEY_SIMPLEX, label_scale, color_bgr, 2)
         
         # EMS Pad Markers
         for pad in muscle.ems_pads_normalized:
@@ -63,8 +61,29 @@ def draw_ems_ui(image_bytes: bytes, analysis: MuscleAnalysisResult) -> bytes:
             cv2.circle(img, (pad_x, pad_y), 12, (0, 150, 255), 3)     
             
             # Pad Labels (e.g., "Proximal")
-            cv2.putText(img, pad.label, (pad_x + 15, pad_y + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 3)
-            cv2.putText(img, pad.label, (pad_x + 15, pad_y + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            cv2.putText(img, pad.label, (pad_x + 15, pad_y + 5), cv2.FONT_HERSHEY_SIMPLEX, label_scale, (0, 0, 0), 4)
+            cv2.putText(img, pad.label, (pad_x + 15, pad_y + 5), cv2.FONT_HERSHEY_SIMPLEX, label_scale, (255, 255, 255), 2)
             
     _, encoded_img = cv2.imencode('.jpg', img)
     return encoded_img.tobytes()
+
+
+def build_alt_text(analysis: MuscleAnalysisResult) -> str:
+    """Build an accessible text description for the annotated image."""
+    if not analysis.muscles:
+        return f"Movement detected: {analysis.movement_detected}. No muscles were mapped."
+
+    muscle_descriptions = []
+    for muscle in analysis.muscles:
+        pad_labels = ", ".join(pad.label for pad in muscle.ems_pads_normalized)
+        if pad_labels:
+            muscle_descriptions.append(
+                f"{muscle.name}, with EMS pads marked at {pad_labels}"
+            )
+        else:
+            muscle_descriptions.append(muscle.name)
+
+    return (
+        f"Movement detected: {analysis.movement_detected}. "
+        f"Highlighted muscles: {'; '.join(muscle_descriptions)}."
+    )

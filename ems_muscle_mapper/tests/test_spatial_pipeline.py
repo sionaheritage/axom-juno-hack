@@ -9,6 +9,7 @@ from PIL import Image
 
 from schemas import MuscleAnalysisResult
 from services.arm_region import ArmRegion, extract_arm_region
+from services.image_processor import build_alt_text
 from services.image_normalizer import normalize_image_orientation
 
 
@@ -76,7 +77,9 @@ class SpatialPipelineTests(unittest.TestCase):
                     {
                         "name": "test",
                         "polygon_vertices_normalized": [
+                            {"x": 0.0, "y": 0.0},
                             {"x": 0.5, "y": 0.5},
+                            {"x": 1.0, "y": 1.0},
                         ],
                         "color_hex": "#ff0000",
                         "ems_pads_normalized": [
@@ -88,15 +91,46 @@ class SpatialPipelineTests(unittest.TestCase):
         )
 
         mapped = crop.map_analysis_to_source(analysis)
-        point = mapped.muscles[0].polygon_vertices_normalized[0]
+        top_left, center, bottom_right = (
+            mapped.muscles[0].polygon_vertices_normalized
+        )
         pad = mapped.muscles[0].ems_pads_normalized[0]
 
-        self.assertAlmostEqual(point.x, 0.175)
-        self.assertAlmostEqual(point.y, 0.4)
+        self.assertAlmostEqual(top_left.x, 0.05)
+        self.assertAlmostEqual(top_left.y, 0.2)
+        self.assertAlmostEqual(center.x, 0.175)
+        self.assertAlmostEqual(center.y, 0.4)
+        self.assertAlmostEqual(bottom_right.x, 0.3)
+        self.assertAlmostEqual(bottom_right.y, 0.6)
         self.assertAlmostEqual(pad.x, 0.175)
         self.assertAlmostEqual(pad.y, 0.4)
         # Mapping is non-mutating.
-        self.assertEqual(analysis.muscles[0].polygon_vertices_normalized[0].x, 0.5)
+        self.assertEqual(analysis.muscles[0].polygon_vertices_normalized[0].x, 0.0)
+
+    def test_alt_text_describes_movement_muscle_and_pads(self):
+        analysis = MuscleAnalysisResult.model_validate(
+            {
+                "movement_detected": "Bicep flexing",
+                "muscles": [
+                    {
+                        "name": "Biceps",
+                        "polygon_vertices_normalized": [
+                            {"x": 0.1, "y": 0.2},
+                        ],
+                        "color_hex": "#ff0000",
+                        "ems_pads_normalized": [
+                            {"label": "Proximal", "x": 0.1, "y": 0.2},
+                            {"label": "Distal", "x": 0.2, "y": 0.3},
+                        ],
+                    }
+                ],
+            }
+        )
+
+        description = build_alt_text(analysis)
+        self.assertIn("Bicep flexing", description)
+        self.assertIn("Biceps", description)
+        self.assertIn("Proximal, Distal", description)
 
 
 if __name__ == "__main__":

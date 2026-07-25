@@ -23,8 +23,11 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
             throw new Error(err.detail || `Request failed with HTTP ${response.status}.`);
         }
 
-        const blob = await response.blob();
-        document.getElementById('resultImage').src = URL.createObjectURL(blob);
+        const result = await response.json();
+        const resultImage = document.getElementById('resultImage');
+        resultImage.src = `data:image/jpeg;base64,${result.image_base64}`;
+        resultImage.alt = result.alt_text;
+        document.getElementById('altText').value = result.alt_text;
         document.getElementById('resultContainer').style.display = 'block';
     } catch (error) {
         console.error('Error:', error);
