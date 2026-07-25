@@ -1,12 +1,11 @@
-import os
 import logging
 import base64
 import hashlib
 from collections import OrderedDict
 from threading import Lock
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from openai import (
     APIConnectionError,
@@ -31,6 +30,7 @@ from schemas import AccuracyFeedback, MuscleAnalysisResult
 logger = logging.getLogger(__name__)
 app = FastAPI(title="EMS Muscle Mapper")
 app.mount("/static", StaticFiles(directory="templates"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 _CACHE_MAX_PAIRS = 32
 _result_cache: OrderedDict[str, dict[str, object]] = OrderedDict()
@@ -65,19 +65,10 @@ def _build_result(
     }
 
 
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    """Renders the frontend upload interface natively without a templating engine."""
-    html_path = os.path.join("templates", "index.html")
-    
-    # Read the file natively
-    try:
-        with open(html_path, "r", encoding="utf-8") as f:
-            html_content = f.read()
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="index.html not found in templates folder.")
-        
-    return HTMLResponse(content=html_content)
+@app.get("/")
+async def home(request: Request):
+    """Render the frontend and its reusable HTML partials."""
+    return templates.TemplateResponse(request=request, name="index.html")
 
 @app.post("/analyze")
 async def process_images(lax_image: UploadFile = File(...), flexed_image: UploadFile = File(...)):

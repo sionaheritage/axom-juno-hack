@@ -1,5 +1,6 @@
 const uploadForm = document.getElementById('uploadForm');
 const card = document.querySelector('.card');
+const signalField = document.getElementById('signalField');
 const laxInput = document.getElementById('lax');
 const flexedInput = document.getElementById('flexed');
 const changeImagesButton = document.getElementById('changeImagesButton');
@@ -8,8 +9,13 @@ const errorState = document.getElementById('errorState');
 const resultContainer = document.getElementById('resultContainer');
 const resultHeading = document.getElementById('resultHeading');
 const resultDetails = document.getElementById('resultDetails');
+const resultImageButton = document.getElementById('resultImageButton');
 const resultImage = document.getElementById('resultImage');
 const altText = document.getElementById('altText');
+const imageLightbox = document.getElementById('imageLightbox');
+const fullSizeResultImage = document.getElementById('fullSizeResultImage');
+const saveResultImage = document.getElementById('saveResultImage');
+const closeImageLightbox = document.getElementById('closeImageLightbox');
 const thumbUpButton = document.getElementById('thumbUpButton');
 const thumbDownButton = document.getElementById('thumbDownButton');
 const correctionPanel = document.getElementById('correctionPanel');
@@ -20,6 +26,75 @@ const feedbackStatus = document.getElementById('feedbackStatus');
 let currentResult = null;
 let currentLaxFile = null;
 let currentFlexedFile = null;
+let signalPointerFrame = null;
+let signalPointerX = 0;
+let signalPointerY = 0;
+let signalLightX = 50;
+let signalLightY = 50;
+let signalParallaxEnabled = false;
+
+const finePointerQuery = window.matchMedia('(pointer: fine)');
+const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+function renderSignalParallax() {
+    signalField.style.setProperty('--signal-shift-x', `${signalPointerX}px`);
+    signalField.style.setProperty('--signal-shift-y', `${signalPointerY}px`);
+    signalField.style.setProperty('--signal-light-x', `${signalLightX}%`);
+    signalField.style.setProperty('--signal-light-y', `${signalLightY}%`);
+    signalPointerFrame = null;
+}
+
+function queueSignalParallax(x, y, lightX = 50, lightY = 50) {
+    signalPointerX = x;
+    signalPointerY = y;
+    signalLightX = lightX;
+    signalLightY = lightY;
+    if (signalPointerFrame === null) {
+        signalPointerFrame = requestAnimationFrame(renderSignalParallax);
+    }
+}
+
+function handleSignalPointer(event) {
+    const normalizedX = (event.clientX / window.innerWidth) * 2 - 1;
+    const normalizedY = (event.clientY / window.innerHeight) * 2 - 1;
+    const lightX = (normalizedX + 1) * 50;
+    const lightY = (normalizedY + 1) * 50;
+    queueSignalParallax(normalizedX * 24, normalizedY * 24, lightX, lightY);
+}
+
+function recenterSignalField() {
+    queueSignalParallax(0, 0);
+}
+
+function syncSignalParallax() {
+    const shouldEnable = finePointerQuery.matches && !reducedMotionQuery.matches;
+    if (shouldEnable === signalParallaxEnabled) {
+        return;
+    }
+
+    signalParallaxEnabled = shouldEnable;
+    if (shouldEnable) {
+        window.addEventListener('pointermove', handleSignalPointer, { passive: true });
+        document.documentElement.addEventListener('pointerleave', recenterSignalField);
+        return;
+    }
+
+    window.removeEventListener('pointermove', handleSignalPointer);
+    document.documentElement.removeEventListener('pointerleave', recenterSignalField);
+    recenterSignalField();
+}
+
+finePointerQuery.addEventListener('change', syncSignalParallax);
+reducedMotionQuery.addEventListener('change', syncSignalParallax);
+syncSignalParallax();
+
+function syncUploadContact(input) {
+    input.closest('.upload-group').classList.toggle('has-file', input.files.length > 0);
+}
+
+[laxInput, flexedInput].forEach((input) => {
+    input.addEventListener('change', () => syncUploadContact(input));
+});
 
 async function readResponse(response) {
     const contentType = response.headers.get('content-type') || '';
@@ -64,8 +139,36 @@ function replayResultTextAnimation() {
     animatedItems.forEach((item) => item.classList.add('is-entering'));
 }
 
+function closeResultLightbox() {
+    if (imageLightbox.hidden) {
+        return;
+    }
+
+    imageLightbox.hidden = true;
+    fullSizeResultImage.removeAttribute('src');
+    fullSizeResultImage.alt = '';
+    saveResultImage.removeAttribute('href');
+    document.body.classList.remove('lightbox-open');
+    resultImageButton.focus();
+}
+
+function openResultLightbox() {
+    if (!resultImage.src) {
+        return;
+    }
+
+    fullSizeResultImage.src = resultImage.src;
+    fullSizeResultImage.alt = resultImage.alt;
+    saveResultImage.href = resultImage.src;
+    imageLightbox.hidden = false;
+    document.body.classList.add('lightbox-open');
+    closeImageLightbox.focus();
+}
+
 function clearResult() {
+    closeResultLightbox();
     card.classList.remove('has-result');
+    resultContainer.classList.remove('is-frame-entering');
     resultContainer.style.display = 'none';
     resultHeading.hidden = true;
     resultDetails.hidden = true;
@@ -78,12 +181,40 @@ function clearResult() {
     currentFlexedFile = null;
     laxInput.value = '';
     flexedInput.value = '';
+    syncUploadContact(laxInput);
+    syncUploadContact(flexedInput);
     loadingState.style.display = 'none';
     errorState.style.display = 'none';
     errorState.textContent = '';
     uploadForm.hidden = false;
     changeImagesButton.hidden = true;
     resetFeedback();
+}
+
+function revealResult() {
+    const resultFigure = resultContainer.querySelector('.result-figure');
+
+    resultContainer.classList.remove('is-frame-entering');
+    resultImage.classList.remove('is-visible');
+
+    if (reducedMotionQuery.matches) {
+        resultImage.classList.add('is-visible');
+        return;
+    }
+
+    void resultContainer.offsetWidth;
+    resultContainer.classList.add('is-frame-entering');
+
+    resultFigure.addEventListener('animationend', (event) => {
+        if (event.animationName !== 'result-frame-extend-up') {
+            return;
+        }
+
+        resultContainer.classList.remove('is-frame-entering');
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => resultImage.classList.add('is-visible'));
+        });
+    }, { once: true });
 }
 
 async function displayResult(result) {
@@ -102,9 +233,7 @@ async function displayResult(result) {
     uploadForm.hidden = true;
     changeImagesButton.hidden = false;
     replayResultTextAnimation();
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => resultImage.classList.add('is-visible'));
-    });
+    revealResult();
 }
 
 async function recordFeedback(accurate) {
@@ -132,7 +261,7 @@ uploadForm.onsubmit = async (event) => {
     formData.append('lax_image', currentLaxFile);
     formData.append('flexed_image', currentFlexedFile);
 
-    loadingState.style.display = 'block';
+    loadingState.style.display = 'grid';
     resultContainer.style.display = 'none';
     resultHeading.hidden = true;
     resultDetails.hidden = true;
@@ -161,6 +290,21 @@ uploadForm.onsubmit = async (event) => {
 changeImagesButton.addEventListener('click', () => {
     clearResult();
     laxInput.focus();
+});
+
+resultImageButton.addEventListener('click', openResultLightbox);
+closeImageLightbox.addEventListener('click', closeResultLightbox);
+
+imageLightbox.addEventListener('click', (event) => {
+    if (event.target === imageLightbox || event.target.classList.contains('image-lightbox__stage')) {
+        closeResultLightbox();
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !imageLightbox.hidden) {
+        closeResultLightbox();
+    }
 });
 
 thumbUpButton.addEventListener('click', async () => {

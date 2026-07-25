@@ -1,19 +1,24 @@
 :root {
     color-scheme: dark;
-    --ink: #edf4ec;
-    --muted: #91a59e;
-    --dim: #5c746c;
+    --ink: #f4f1e8;
+    --muted: #c8cec6;
+    --dim: #93a29b;
     --page: #07100f;
-    --panel: rgba(8, 20, 18, 0.88);
+    --panel: transparent;
     --panel-solid: #0b1917;
     --field: #0d211d;
     --line: rgba(162, 193, 181, 0.2);
     --signal: #87f7c7;
     --signal-strong: #b3ffdf;
     --signal-soft: rgba(135, 247, 199, 0.13);
+    --signal-warm: #ffd65c;
     --alert: #ff8066;
     --alert-soft: rgba(255, 107, 74, 0.13);
     --shadow: rgba(0, 0, 0, 0.52);
+    --signal-shift-x: 0px;
+    --signal-shift-y: 0px;
+    --signal-light-x: 50%;
+    --signal-light-y: 50%;
 }
 
 * {
@@ -32,8 +37,8 @@ body {
     padding: clamp(0.75rem, 2vw, 1.75rem);
     overflow-x: hidden;
     background:
-        radial-gradient(circle at 76% 14%, rgba(64, 146, 118, 0.17), transparent 30%),
-        radial-gradient(circle at 12% 86%, rgba(35, 92, 74, 0.13), transparent 32%),
+        radial-gradient(circle at 76% 14%, rgba(64, 146, 118, 0.1), transparent 30%),
+        radial-gradient(circle at 12% 86%, rgba(35, 92, 74, 0.08), transparent 32%),
         var(--page);
     color: var(--ink);
     font-family: Bahnschrift, "Avenir Next Condensed", "Segoe UI", sans-serif;
@@ -48,12 +53,12 @@ body::before {
     pointer-events: none;
     content: "";
     background:
-        radial-gradient(circle at 16% 24%, rgba(135, 247, 199, 0.34) 0 1px, transparent 2px),
-        radial-gradient(circle at 84% 68%, rgba(135, 247, 199, 0.26) 0 1px, transparent 2px),
-        linear-gradient(122deg, transparent 0 48%, rgba(135, 247, 199, 0.035) 48% 48.2%, transparent 48.2%),
-        linear-gradient(90deg, rgba(135, 247, 199, 0.025) 1px, transparent 1px),
-        linear-gradient(rgba(135, 247, 199, 0.02) 1px, transparent 1px),
-        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 4px);
+        radial-gradient(circle at 16% 24%, rgba(135, 247, 199, 0.18) 0 1px, transparent 2px),
+        radial-gradient(circle at 84% 68%, rgba(127, 226, 255, 0.14) 0 1px, transparent 2px),
+        linear-gradient(122deg, transparent 0 48%, rgba(135, 247, 199, 0.02) 48% 48.2%, transparent 48.2%),
+        linear-gradient(90deg, rgba(135, 247, 199, 0.018) 1px, transparent 1px),
+        linear-gradient(rgba(127, 226, 255, 0.014) 1px, transparent 1px),
+        repeating-linear-gradient(0deg, rgba(127, 226, 255, 0.009) 0 1px, transparent 1px 4px);
     background-size: auto, auto, auto, 72px 72px, 72px 72px, auto;
     mask-image: radial-gradient(circle at center, black, transparent 88%);
 }
@@ -67,13 +72,203 @@ body::after {
     background: linear-gradient(
         108deg,
         transparent 42%,
-        rgba(135, 247, 199, 0.035) 48%,
-        rgba(135, 247, 199, 0.09) 50%,
-        rgba(135, 247, 199, 0.035) 52%,
+        rgba(135, 247, 199, 0.02) 48%,
+        rgba(127, 226, 255, 0.045) 50%,
+        rgba(135, 247, 199, 0.02) 52%,
         transparent 58%
     );
     transform: translateX(-38%);
     animation: scan-glow 24s ease-in-out infinite;
+}
+
+.electric-rail {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    height: clamp(4rem, 7vh, 5.5rem);
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.82;
+}
+
+.electric-rail--top {
+    top: 0;
+    bottom: auto;
+    opacity: 0.5;
+    transform: scaleY(-1);
+}
+
+.electric-rail svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.electric-rail__trace,
+.electric-rail__pulse {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+}
+
+.electric-rail__trace {
+    stroke: rgba(135, 247, 199, 0.13);
+    stroke-width: 1.35;
+}
+
+.electric-rail__pulse {
+    stroke: var(--signal);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-dasharray: 3 44 18 120;
+    filter: drop-shadow(0 0 3px rgba(135, 247, 199, 0.52));
+    animation: electricity-run 7.6s linear infinite;
+}
+
+.electric-rail__pulse--echo {
+    stroke: var(--signal-strong);
+    stroke-width: 1.05;
+    stroke-dasharray: 1 92 8 160;
+    opacity: 0.7;
+    animation-duration: 7.2s;
+    animation-direction: reverse;
+}
+
+.electric-rail--top .electric-rail__pulse {
+    animation-direction: reverse;
+}
+
+.electric-rail--top .electric-rail__pulse--echo {
+    animation-direction: normal;
+}
+
+.signal-field {
+    position: fixed;
+    inset: -1rem;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.76;
+    transform: translate3d(var(--signal-shift-x), var(--signal-shift-y), 0) scale(1.015);
+    transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+}
+
+.signal-field::before {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background: radial-gradient(
+        circle 15rem at var(--signal-light-x) var(--signal-light-y),
+        rgba(255, 214, 92, 0.2),
+        rgba(255, 190, 64, 0.07) 38%,
+        transparent 72%
+    );
+}
+
+.signal-field::after {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    content: "";
+    background: radial-gradient(
+        ellipse 38rem 28rem at center,
+        rgba(255, 214, 92, 0.11),
+        rgba(255, 190, 64, 0.045) 38%,
+        rgba(135, 247, 199, 0.012) 62%,
+        transparent 78%
+    );
+    mix-blend-mode: screen;
+}
+
+.signal-field svg {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.signal-field__drift {
+    animation: signal-field-drift 32s ease-in-out infinite alternate;
+    transform-origin: center;
+}
+
+.signal-field__fibres {
+    fill: none;
+    stroke: var(--signal);
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.signal-field__fibres--rear {
+    stroke-width: 1;
+    opacity: 0.24;
+}
+
+.signal-field__fibres--front {
+    stroke-width: 1.35;
+    opacity: 0.4;
+}
+
+.signal-field__fibres--arcs {
+    stroke: var(--signal-warm);
+    stroke-width: 0.85;
+    opacity: 0.13;
+}
+
+.signal-field__fibres--cross {
+    stroke: rgba(127, 226, 255, 0.6);
+    stroke-width: 0.9;
+    opacity: 0.22;
+}
+
+.signal-field__wave-trace,
+.signal-field__wave-pulse {
+    fill: none;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.signal-field__wave-trace {
+    stroke: rgba(127, 226, 255, 0.34);
+    stroke-width: 1.1;
+}
+
+.signal-field__wave-pulse {
+    stroke: var(--signal);
+    stroke-width: 1.25;
+    stroke-dasharray: 2 168 18 260;
+    opacity: 0.72;
+    animation: signal-pulse 14s linear infinite;
+}
+
+.signal-field__nodes {
+    fill: rgba(135, 247, 199, 0.16);
+    stroke: rgba(127, 226, 255, 0.48);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+}
+
+.hand-ticker {
+    position: fixed;
+    top: -2px;
+    left: 130px;
+    bottom: -2px;
+    z-index: 0;
+    width: 322px;
+    pointer-events: none;
+    background-image: url("/static/images/hands1.png");
+    background-repeat: repeat-y;
+    background-position: center 0;
+    background-size: 322px 699px;
+    opacity: 0.33;
+    filter: blur(2px);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 24%, black 100%);
+    mask-image: linear-gradient(to right, transparent 0, black 24%, black 100%);
+    animation: hand-ticker-scroll 24s linear infinite;
+    will-change: background-position;
 }
 
 button,
@@ -90,8 +285,8 @@ textarea {
     padding: clamp(1.25rem, 4vw, 2.5rem);
     border: 1px solid var(--line);
     background: var(--panel);
-    box-shadow: 0 24px 72px var(--shadow), inset 0 1px rgba(255, 255, 255, 0.025);
-    backdrop-filter: blur(16px);
+    box-shadow: 0 24px 72px var(--shadow), inset 0 1px rgba(135, 247, 199, 0.025);
+    backdrop-filter: none;
 }
 
 .card::before {
@@ -160,9 +355,62 @@ h1 {
 .capture-guidance {
     margin-bottom: 1.5rem;
     padding: 1rem 1.1rem;
-    border: 1px solid var(--line);
-    border-left-color: rgba(135, 247, 199, 0.72);
     background: linear-gradient(90deg, var(--signal-soft), rgba(8, 20, 18, 0.3));
+}
+
+.capture-guidance,
+.meaning-panel,
+.feedback-panel,
+.loading,
+.error,
+.correction-panel {
+    --bracket-color: rgba(135, 247, 199, 0.55);
+    --bracket-length: 1.65rem;
+    position: relative;
+    border: 0;
+}
+
+.capture-guidance::before,
+.meaning-panel::before,
+.feedback-panel::before,
+.loading::before,
+.error::before,
+.correction-panel::before {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    content: "";
+    background:
+        linear-gradient(var(--bracket-color), var(--bracket-color)) left top / var(--bracket-length) 1px no-repeat,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) left top / 1px var(--bracket-length) no-repeat,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) right top / var(--bracket-length) 1px no-repeat,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) right top / 1px var(--bracket-length) no-repeat,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) left bottom / var(--bracket-length) 1px no-repeat,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) left bottom / 1px var(--bracket-length) no-repeat,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) right bottom / var(--bracket-length) 1px no-repeat,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) right bottom / 1px var(--bracket-length) no-repeat;
+    filter: drop-shadow(0 0 4px var(--bracket-color));
+}
+
+.capture-guidance::after,
+.meaning-panel::after,
+.feedback-panel::after,
+.loading::after,
+.error::after,
+.correction-panel::after {
+    position: absolute;
+    inset: -2px;
+    pointer-events: none;
+    content: "";
+    background:
+        radial-gradient(circle at 2px 2px, var(--bracket-color) 0 1.5px, transparent 2px),
+        radial-gradient(circle at calc(100% - 2px) 2px, var(--bracket-color) 0 1.5px, transparent 2px),
+        radial-gradient(circle at 2px calc(100% - 2px), var(--bracket-color) 0 1.5px, transparent 2px),
+        radial-gradient(circle at calc(100% - 2px) calc(100% - 2px), var(--bracket-color) 0 1.5px, transparent 2px);
+}
+
+.capture-guidance {
+    --bracket-color: rgba(135, 247, 199, 0.72);
 }
 
 .capture-guidance h2,
@@ -176,6 +424,10 @@ h1 {
     letter-spacing: 0.13em;
     line-height: 1.4;
     text-transform: uppercase;
+}
+
+.capture-guidance h2 {
+    font-size: 0.86rem;
 }
 
 .capture-guidance ul {
@@ -200,10 +452,29 @@ h1 {
 }
 
 #uploadForm {
+    --upload-frame: rgba(135, 247, 199, 0.58);
+    position: relative;
+    padding: clamp(0.85rem, 2vw, 1.15rem);
+    background:
+        radial-gradient(circle at 2px 2px, var(--upload-frame) 0 1.5px, transparent 2px),
+        radial-gradient(circle at calc(100% - 2px) 2px, var(--upload-frame) 0 1.5px, transparent 2px),
+        radial-gradient(circle at 2px calc(100% - 2px), var(--upload-frame) 0 1.5px, transparent 2px),
+        radial-gradient(circle at calc(100% - 2px) calc(100% - 2px), var(--upload-frame) 0 1.5px, transparent 2px),
+        linear-gradient(var(--upload-frame), var(--upload-frame)) left top / 2.2rem 1px no-repeat,
+        linear-gradient(var(--upload-frame), var(--upload-frame)) left top / 1px 2.2rem no-repeat,
+        linear-gradient(var(--upload-frame), var(--upload-frame)) right top / 2.2rem 1px no-repeat,
+        linear-gradient(var(--upload-frame), var(--upload-frame)) right top / 1px 2.2rem no-repeat,
+        linear-gradient(var(--upload-frame), var(--upload-frame)) left bottom / 2.2rem 1px no-repeat,
+        linear-gradient(var(--upload-frame), var(--upload-frame)) left bottom / 1px 2.2rem no-repeat,
+        linear-gradient(var(--upload-frame), var(--upload-frame)) right bottom / 2.2rem 1px no-repeat,
+        linear-gradient(var(--upload-frame), var(--upload-frame)) right bottom / 1px 2.2rem no-repeat,
+        linear-gradient(135deg, rgba(135, 247, 199, 0.045), rgba(6, 18, 16, 0.3));
+    filter: drop-shadow(0 0 5px rgba(135, 247, 199, 0.08));
     animation: controls-enter 440ms cubic-bezier(0.22, 1, 0.36, 1) 100ms both;
 }
 
 .upload-grid {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
@@ -211,7 +482,177 @@ h1 {
 }
 
 .upload-group {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    aspect-ratio: 1;
     min-width: 0;
+    padding: 1rem;
+    border: 1px solid rgba(135, 247, 199, 0.18);
+    background:
+        linear-gradient(135deg, rgba(135, 247, 199, 0.045), transparent 48%),
+        rgba(6, 18, 16, 0.72);
+    box-shadow: inset 0 0 22px rgba(135, 247, 199, 0.025);
+}
+
+.upload-group__traces {
+    position: absolute;
+    inset: -0.7rem 0.65rem;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(rgba(135, 247, 199, 0.48), rgba(135, 247, 199, 0.48)) 18% top / 1px 0.7rem no-repeat,
+        linear-gradient(rgba(127, 226, 255, 0.38), rgba(127, 226, 255, 0.38)) 82% top / 1px 0.45rem no-repeat,
+        linear-gradient(rgba(127, 226, 255, 0.38), rgba(127, 226, 255, 0.38)) 18% bottom / 1px 0.45rem no-repeat,
+        linear-gradient(rgba(135, 247, 199, 0.48), rgba(135, 247, 199, 0.48)) 82% bottom / 1px 0.7rem no-repeat;
+    filter: drop-shadow(0 0 3px rgba(135, 247, 199, 0.35));
+}
+
+.upload-pose,
+.upload-group label,
+.upload-group input {
+    position: relative;
+    z-index: 1;
+}
+
+.upload-pose {
+    display: grid;
+    min-height: 0;
+    margin: 0.15rem 0 0.7rem;
+    place-items: center;
+    color: var(--signal);
+}
+
+.upload-pose svg {
+    display: block;
+    width: min(76%, 9.5rem);
+    max-height: 100%;
+    overflow: visible;
+    filter: drop-shadow(0 0 7px rgba(135, 247, 199, 0.16));
+}
+
+.upload-pose__orbit,
+.upload-pose__axis,
+.upload-pose__torso,
+.upload-pose__arm,
+.upload-pose__hand,
+.upload-pose__joint {
+    vector-effect: non-scaling-stroke;
+}
+
+.upload-pose__orbit {
+    fill: rgba(135, 247, 199, 0.025);
+    stroke: rgba(135, 247, 199, 0.17);
+    stroke-dasharray: 2 6;
+    stroke-width: 1;
+}
+
+.upload-pose__axis {
+    fill: none;
+    stroke: rgba(127, 226, 255, 0.32);
+    stroke-width: 1;
+}
+
+.upload-pose__torso {
+    fill: none;
+    stroke: rgba(200, 206, 198, 0.28);
+    stroke-linecap: round;
+    stroke-width: 7;
+}
+
+.upload-pose__arm {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 8;
+}
+
+.upload-pose__joint {
+    fill: #0a1a17;
+    stroke: var(--signal-strong);
+    stroke-width: 1.5;
+}
+
+.upload-pose__joint--small {
+    fill: var(--signal);
+    stroke-width: 1;
+}
+
+.upload-pose__hand {
+    fill: none;
+    stroke: var(--signal-strong);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.upload-pose__muscle {
+    fill: rgba(135, 247, 199, 0.16);
+    stroke: rgba(179, 255, 223, 0.66);
+    stroke-width: 1;
+}
+
+.upload-group::before {
+    position: absolute;
+    top: 1.05rem;
+    left: 0.85rem;
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 1px solid rgba(135, 247, 199, 0.48);
+    border-radius: 50%;
+    content: "";
+    background: radial-gradient(
+        circle,
+        rgba(127, 226, 255, 0.32) 0 1px,
+        rgba(7, 16, 15, 0.92) 2px 5px,
+        rgba(135, 247, 199, 0.14) 6px 100%
+    );
+    box-shadow: 0 0 8px rgba(135, 247, 199, 0.12);
+}
+
+.upload-group::after {
+    position: absolute;
+    top: 1.57rem;
+    left: 1.9rem;
+    width: 0.55rem;
+    height: 1px;
+    content: "";
+    background: rgba(127, 226, 255, 0.25);
+}
+
+.upload-group.has-file::before {
+    border-color: rgba(255, 214, 92, 0.92);
+    background: radial-gradient(
+        circle,
+        rgba(255, 231, 142, 0.95) 0 2px,
+        rgba(61, 47, 13, 0.94) 3px 5px,
+        rgba(255, 190, 64, 0.42) 6px 100%
+    );
+    box-shadow:
+        0 0 8px rgba(255, 214, 92, 0.68),
+        0 0 18px rgba(255, 190, 64, 0.32);
+    animation: electrode-ready 1.8s ease-in-out infinite alternate;
+}
+
+.upload-group.has-file::after {
+    background: rgba(255, 214, 92, 0.72);
+    box-shadow: 0 0 7px rgba(255, 190, 64, 0.4);
+}
+
+@media (min-width: 641px) {
+    .upload-grid::after {
+        position: absolute;
+        top: 50%;
+        left: calc(50% - 0.45rem);
+        z-index: 0;
+        width: 0.9rem;
+        height: 1px;
+        content: "";
+        background: rgba(135, 247, 199, 0.24);
+        box-shadow: 0 0 6px rgba(127, 226, 255, 0.08);
+    }
 }
 
 label {
@@ -285,7 +726,7 @@ button {
 
 button:hover {
     border-color: var(--signal);
-    color: #ffffff;
+    color: var(--ink);
     box-shadow: 0 0 22px rgba(135, 247, 199, 0.17), inset 0 0 24px rgba(135, 247, 199, 0.08);
     transform: translateY(-1px);
 }
@@ -311,20 +752,94 @@ button.change-images-button {
     display: none;
     margin-top: 0.85rem;
     padding: 0.8rem 0.9rem;
-    border: 1px solid var(--line);
     font-family: "IBM Plex Mono", Consolas, monospace;
     font-size: 0.72rem;
     line-height: 1.5;
 }
 
 .loading {
-    border-color: rgba(135, 247, 199, 0.3);
     background: var(--signal-soft);
     color: var(--signal);
 }
 
+.loading {
+    grid-template-columns: minmax(0, 0.9fr) minmax(6rem, 1.1fr);
+    align-items: center;
+    gap: clamp(0.8rem, 2vw, 1.5rem);
+    min-height: 4.8rem;
+    overflow: hidden;
+}
+
+.loading-copy {
+    position: relative;
+    z-index: 1;
+    text-align: left;
+}
+
+.loading-copy small {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--muted);
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+}
+
+.loading-dots {
+    display: inline-block;
+    width: 1.8em;
+    text-align: left;
+}
+
+.loading-dots::after {
+    content: ".";
+    animation: loading-ellipsis 750ms steps(1, end) infinite;
+}
+
+.loading-bolt {
+    display: block;
+    align-self: stretch;
+    min-width: 0;
+}
+
+.loading-bolt svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 3.3rem;
+}
+
+.loading-bolt__trace,
+.loading-bolt__pulse {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.loading-bolt__trace {
+    stroke: rgba(135, 247, 199, 0.18);
+    stroke-width: 1.2;
+}
+
+.loading-bolt__pulse {
+    stroke: var(--signal);
+    stroke-width: 1.65;
+    stroke-dasharray: 3 26 12 54;
+    filter: drop-shadow(0 0 4px rgba(135, 247, 199, 0.8));
+    animation: loading-electricity 1.05s linear infinite;
+}
+
+.loading-bolt__pulse--echo {
+    stroke: var(--signal-warm);
+    stroke-width: 0.8;
+    stroke-dasharray: 1 52 7 88;
+    opacity: 0.6;
+    animation-duration: 1.45s;
+    animation-direction: reverse;
+}
+
 .error {
-    border-color: rgba(255, 128, 102, 0.42);
+    --bracket-color: rgba(255, 128, 102, 0.7);
     background: var(--alert-soft);
     color: #ffb4a5;
 }
@@ -352,10 +867,36 @@ button.change-images-button {
     min-width: 0;
 }
 
+#resultContainer.is-frame-entering .result-figure {
+    animation: result-frame-extend-up 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.result-image-button {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    cursor: zoom-in;
+}
+
+.result-image-button:hover {
+    border: 0;
+    background: transparent;
+    box-shadow: 0 0 28px rgba(135, 247, 199, 0.12);
+    transform: none;
+}
+
 .result-figure {
     position: relative;
     margin: 0;
     padding: 0.65rem;
+    overflow: hidden;
     border: 1px solid rgba(135, 247, 199, 0.22);
     outline: 1px solid rgba(135, 247, 199, 0.08);
     outline-offset: -0.35rem;
@@ -365,24 +906,6 @@ button.change-images-button {
         #06100e;
     background-size: 48px 48px;
     box-shadow: 0 22px 54px var(--shadow);
-}
-
-.frame-label {
-    position: absolute;
-    top: 0;
-    left: 2.6rem;
-    z-index: 3;
-    padding: 0.18rem 0.45rem;
-    border-right: 1px solid rgba(135, 247, 199, 0.35);
-    border-left: 1px solid rgba(135, 247, 199, 0.35);
-    background: #081512;
-    color: var(--signal);
-    font-family: "IBM Plex Mono", Consolas, monospace;
-    font-size: 0.57rem;
-    letter-spacing: 0.13em;
-    line-height: 1.2;
-    text-transform: uppercase;
-    transform: translateY(-50%);
 }
 
 .result-figure::before,
@@ -417,12 +940,17 @@ button.change-images-button {
     max-width: 100%;
     height: auto;
     opacity: 0;
+    clip-path: inset(0 0 100% 0);
     filter: saturate(0.93) contrast(1.02);
-    transition: opacity 500ms ease-out;
 }
 
 #resultImage.is-visible {
-    opacity: 1;
+    animation: result-image-wipe-down 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.result-image-button:focus-visible {
+    outline: 1px solid var(--signal);
+    outline-offset: -4px;
 }
 
 .result-caption {
@@ -441,8 +969,8 @@ button.change-images-button {
 
 .meaning-panel {
     margin-top: 1.4rem;
-    padding-top: 1.1rem;
-    border-top: 1px solid var(--line);
+    padding: 1rem 1.1rem;
+    background: linear-gradient(135deg, rgba(135, 247, 199, 0.075), rgba(8, 20, 18, 0.2));
 }
 
 .meaning-panel p {
@@ -454,8 +982,8 @@ button.change-images-button {
 
 .feedback-panel {
     margin-top: 1.15rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--line);
+    padding: 1rem 1.1rem;
+    background: linear-gradient(135deg, rgba(135, 247, 199, 0.055), rgba(8, 20, 18, 0.18));
 }
 
 .feedback-question {
@@ -500,9 +1028,9 @@ button.feedback-icon.is-selected {
 }
 
 .correction-panel {
+    --bracket-color: rgba(135, 247, 199, 0.38);
     margin-top: 0.85rem;
     padding: 0.9rem;
-    border: 1px solid var(--line);
     background: rgba(7, 16, 15, 0.72);
 }
 
@@ -547,8 +1075,108 @@ button.refine-button {
     color: var(--alert);
 }
 
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    padding: clamp(0.75rem, 2vw, 1.5rem);
+    background: rgba(2, 8, 7, 0.96);
+    backdrop-filter: blur(14px);
+    animation: lightbox-enter 180ms ease-out both;
+}
+
+.image-lightbox__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: min(100%, 1600px);
+    margin: 0 auto;
+    padding-bottom: 0.75rem;
+}
+
+.image-lightbox__bar p {
+    margin: 0;
+    color: var(--signal);
+    font-family: "IBM Plex Mono", Consolas, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.image-lightbox__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.image-lightbox__save {
+    display: inline-grid;
+    min-height: 2.5rem;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid rgba(135, 247, 199, 0.62);
+    background: linear-gradient(135deg, #183b31, #102a24);
+    color: var(--signal-strong);
+    font-family: "IBM Plex Mono", Consolas, monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    place-items: center;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.image-lightbox__save:hover {
+    border-color: var(--signal);
+    color: var(--ink);
+    box-shadow: 0 0 22px rgba(135, 247, 199, 0.17);
+}
+
+button.image-lightbox__close {
+    width: 2.5rem;
+    min-height: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    font-size: 1.45rem;
+    letter-spacing: 0;
+    line-height: 1;
+}
+
+.image-lightbox__stage {
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    border: 1px solid rgba(135, 247, 199, 0.2);
+    background:
+        linear-gradient(90deg, rgba(135, 247, 199, 0.025) 1px, transparent 1px),
+        linear-gradient(rgba(135, 247, 199, 0.025) 1px, transparent 1px),
+        #040b0a;
+    background-size: 48px 48px;
+    place-items: center;
+}
+
+#fullSizeResultImage {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+body.lightbox-open {
+    overflow: hidden;
+}
+
 [hidden] {
     display: none !important;
+}
+
+.card.has-result .capture-guidance {
+    display: none;
 }
 
 @media (min-width: 1100px) {
@@ -578,6 +1206,14 @@ button.refine-button {
         align-content: start;
     }
 
+    .card.has-result {
+        grid-template-areas:
+            "intro controls"
+            "result-title visual"
+            "details visual";
+        grid-template-rows: auto auto minmax(0, 1fr);
+    }
+
     .app-intro {
         grid-area: intro;
         margin-bottom: 1rem;
@@ -595,9 +1231,42 @@ button.refine-button {
         min-width: 0;
     }
 
+    #uploadForm::before,
+    #uploadForm::after {
+        position: absolute;
+        right: 0;
+        left: 0;
+        height: clamp(2.5rem, 8vh, 4.5rem);
+        pointer-events: none;
+        content: "";
+        opacity: 0.58;
+    }
+
+    #uploadForm::before {
+        bottom: 100%;
+        background:
+            linear-gradient(var(--upload-frame), var(--upload-frame)) left bottom / 1px 72% no-repeat,
+            linear-gradient(var(--upload-frame), var(--upload-frame)) right bottom / 1px 72% no-repeat,
+            linear-gradient(rgba(127, 226, 255, 0.42), rgba(127, 226, 255, 0.42)) 38% bottom / 1px 36% no-repeat,
+            linear-gradient(rgba(127, 226, 255, 0.42), rgba(127, 226, 255, 0.42)) 62% bottom / 1px 48% no-repeat;
+    }
+
+    #uploadForm::after {
+        top: 100%;
+        background:
+            linear-gradient(var(--upload-frame), var(--upload-frame)) left top / 1px 72% no-repeat,
+            linear-gradient(var(--upload-frame), var(--upload-frame)) right top / 1px 72% no-repeat,
+            linear-gradient(rgba(127, 226, 255, 0.42), rgba(127, 226, 255, 0.42)) 38% top / 1px 48% no-repeat,
+            linear-gradient(rgba(127, 226, 255, 0.42), rgba(127, 226, 255, 0.42)) 62% top / 1px 36% no-repeat;
+    }
+
     .card.has-result .upload-zone {
-        grid-area: controls;
+        grid-column: 2;
+        grid-row: 1;
         align-self: start;
+        justify-self: end;
+        z-index: 5;
+        width: auto;
     }
 
     .result-heading {
@@ -615,24 +1284,36 @@ button.refine-button {
     }
 
     #resultContainer {
-        grid-area: visual;
+        grid-column: 2;
+        grid-row: 1 / -1;
         align-self: stretch;
         min-height: 0;
+        width: 100%;
+        max-width: 100%;
         height: 100%;
     }
 
     .result-figure {
         display: grid;
         grid-template-rows: minmax(0, 1fr) auto;
+        width: 100%;
+        max-width: 100%;
         min-height: 0;
+        height: 100%;
+    }
+
+    .result-image-button {
         height: 100%;
     }
 
     #resultImage {
         width: 100%;
+        max-width: 100%;
         height: 100%;
+        max-height: 100%;
         min-height: 0;
         object-fit: contain;
+        object-position: center;
     }
 
     .meaning-panel {
@@ -680,6 +1361,40 @@ button.refine-button {
     }
 }
 
+@keyframes result-frame-extend-up {
+    from {
+        clip-path: inset(100% 0 0 0);
+        opacity: 0.45;
+    }
+
+    to {
+        clip-path: inset(0);
+        opacity: 1;
+    }
+}
+
+@keyframes result-image-wipe-down {
+    from {
+        clip-path: inset(0 0 100% 0);
+        opacity: 0;
+    }
+
+    to {
+        clip-path: inset(0);
+        opacity: 1;
+    }
+}
+
+@keyframes lightbox-enter {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
 @keyframes scan-glow {
     0%,
     18% {
@@ -688,13 +1403,101 @@ button.refine-button {
     }
 
     50% {
-        opacity: 0.7;
+        opacity: 0.45;
     }
 
     82%,
     100% {
         opacity: 0.2;
         transform: translateX(38%);
+    }
+}
+
+@keyframes signal-field-drift {
+    from {
+        transform: translate3d(-0.35%, -0.2%, 0) scale(1);
+    }
+
+    to {
+        transform: translate3d(0.35%, 0.2%, 0) scale(1.008);
+    }
+}
+
+@keyframes signal-pulse {
+    from {
+        stroke-dashoffset: 0;
+    }
+
+    to {
+        stroke-dashoffset: -448;
+    }
+}
+
+@keyframes hand-ticker-scroll {
+    from {
+        background-position: center 0;
+    }
+
+    to {
+        background-position: center -699px;
+    }
+}
+
+@keyframes electrode-ready {
+    from {
+        filter: brightness(0.9);
+    }
+
+    to {
+        filter: brightness(1.2);
+    }
+}
+
+@keyframes electricity-run {
+    0% {
+        stroke-dashoffset: 0;
+        opacity: 0.35;
+    }
+
+    12%,
+    72% {
+        opacity: 1;
+    }
+
+    100% {
+        stroke-dashoffset: -420;
+        opacity: 0.45;
+    }
+}
+
+@keyframes loading-ellipsis {
+    0% {
+        content: ".";
+    }
+
+    33% {
+        content: "..";
+    }
+
+    66%,
+    100% {
+        content: "...";
+    }
+}
+
+@keyframes loading-electricity {
+    from {
+        stroke-dashoffset: 0;
+        opacity: 0.45;
+    }
+
+    35% {
+        opacity: 1;
+    }
+
+    to {
+        stroke-dashoffset: -102;
+        opacity: 0.55;
     }
 }
 
@@ -706,5 +1509,13 @@ button.refine-button {
         animation-duration: 0.001ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.001ms !important;
+    }
+
+    .signal-field {
+        transform: none;
+    }
+
+    .hand-ticker {
+        animation: none;
     }
 }
