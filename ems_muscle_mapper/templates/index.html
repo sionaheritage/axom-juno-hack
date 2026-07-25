@@ -5,76 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EMS Muscle Mapper</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            padding: 2rem;
-            max-width: 800px;
-            margin: 0 auto;
-            background: #f9f9f9;
-        }
-
-        .card {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .upload-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-
-        input[type="file"] {
-            display: block;
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-size: 1rem;
-            cursor: pointer;
-            width: 100%;
-            font-weight: bold;
-        }
-
-        button:hover {
-            background: #0056b3;
-        }
-
-        #resultContainer {
-            margin-top: 2rem;
-            display: none;
-            text-align: center;
-        }
-
-        #resultImage {
-            max-width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            margin-top: 1rem;
-            font-weight: bold;
-            color: #555;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 
 <body>
@@ -96,6 +27,7 @@
         </form>
 
         <div class="loading" id="loadingState">Analyzing biomechanics (this takes a few seconds)...</div>
+        <div class="error" id="errorState" role="alert"></div>
 
         <div id="resultContainer">
             <h3>EMS Pad Mapping</h3>
@@ -103,39 +35,7 @@
         </div>
     </div>
 
-    <script>
-        document.getElementById('uploadForm').onsubmit = async (e) => {
-            e.preventDefault();
-
-            const laxFile = document.getElementById('lax').files[0];
-            const flexedFile = document.getElementById('flexed').files[0];
-
-            const formData = new FormData();
-            formData.append("lax_image", laxFile);
-            formData.append("flexed_image", flexedFile);
-
-            document.getElementById('loadingState').style.display = 'block';
-            document.getElementById('resultContainer').style.display = 'none';
-
-            try {
-                const response = await fetch('/analyze', { method: 'POST', body: formData });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    alert(err.detail);
-                    throw new Error(err.detail);
-                }
-
-                const blob = await response.blob();
-                document.getElementById('resultImage').src = URL.createObjectURL(blob);
-                document.getElementById('resultContainer').style.display = 'block';
-            } catch (error) {
-                console.error("Error:", error);
-            } finally {
-                document.getElementById('loadingState').style.display = 'none';
-            }
-        };
-    </script>
+    <script src="/static/js/app.js" defer></script>
 </body>
 
 </html>
