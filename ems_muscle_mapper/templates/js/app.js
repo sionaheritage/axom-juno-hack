@@ -240,7 +240,7 @@ async function recordFeedback(accurate) {
     if (!currentResult) {
         return;
     }
-    const response = await fetch('/feedback', {
+    const response = await fetch('feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -271,7 +271,7 @@ uploadForm.onsubmit = async (event) => {
     resetFeedback();
 
     try {
-        const response = await fetch('/analyze', {
+        const response = await fetch('analyze', {
             method: 'POST',
             body: formData,
         });
@@ -358,7 +358,7 @@ submitCorrection.addEventListener('click', async () => {
     setFeedbackStatus('Revising coordinates with your feedback...');
 
     try {
-        const response = await fetch('/refine', {
+        const response = await fetch('refine', {
             method: 'POST',
             body: formData,
         });

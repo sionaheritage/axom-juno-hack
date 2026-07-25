@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EMS Muscle Mapper</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="static/css/style.css">
 </head>
 
 <body>
@@ -72,7 +72,7 @@
     <main class="card">
         <header class="app-intro">
             <p class="eyebrow text-enter enter-1">Biomechanical analysis // EMS placement</p>
-            <h1 class="text-enter enter-2">EMS Muscle Map</h1>
+            <h1 class="text-enter enter-2">EMS Muscle Mapper</h1>
             <p class="text-enter enter-3">Upload a relaxed photo and a tensed photo from the same angle to calculate optimal EMS pad placement.</p>
         </header>
 
@@ -129,7 +129,6 @@
                 <button class="analyze-button" id="analyzeButton" type="submit" aria-busy="false">
                     <span class="analyze-button__label">
                         Analyze Muscle &amp; Map Pads
-                        <span class="loading-ellipsis" aria-hidden="true">...</span>
                     </span>
                 </button>
             </form>
@@ -226,7 +225,7 @@
 
     {{ electric_rail() }}
 
-    <script src="/static/js/app.js" defer></script>
+    <script src="static/js/app.js" defer></script>
 </body>
 
 </html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMS Muscle Tools</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        body {
+            display: grid;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1.5rem;
+            place-items: center;
+            background: #07100f;
+            color: #f4f1e8;
+        }
+
+        main {
+            width: min(100%, 42rem);
+            padding: clamp(1.5rem, 5vw, 3rem);
+            border: 1px solid rgba(135, 247, 199, 0.35);
+            background: rgba(11, 25, 23, 0.72);
+            box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.45);
+        }
+
+        p {
+            color: #c8cec6;
+            line-height: 1.6;
+        }
+
+        .test-button {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.8rem 1rem;
+            border: 1px solid #87f7c7;
+            background: #102a24;
+            color: #b3ffdf;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .test-button:hover,
+        .test-button:focus-visible {
+            background: #183b31;
+            color: #ffffff;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>EMS Muscle Tools</h1>
+        <p>This landing page sits outside the EMS Muscle Mapper application.</p>
+        <a class="test-button" href="/ems-muscle-mapper/">Test EMS Muscle Mapper</a>
+    </main>
+</body>
+
+</html>

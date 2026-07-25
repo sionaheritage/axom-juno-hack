@@ -259,7 +259,7 @@ body::after {
     z-index: 0;
     width: 322px;
     pointer-events: none;
-    background-image: url("/static/images/hands1.png");
+    background-image: url("../images/hands1.png");
     background-repeat: repeat-y;
     background-position: center 0;
     background-size: 322px 699px;
@@ -337,7 +337,7 @@ textarea {
 h1 {
     margin: 0;
     color: var(--ink);
-    font-size: clamp(2rem, 7vw, 3.8rem);
+    font-size: clamp(2rem, 4.5vw, 3.8rem);
     font-stretch: condensed;
     font-weight: 600;
     letter-spacing: -0.035em;
@@ -1518,4 +1518,47 @@ body.lightbox-open {
     .hand-ticker {
         animation: none;
     }
+}
+
+.landing-page {
+    display: grid;
+    place-items: center;
+}
+
+.landing-card {
+    display: block;
+    width: min(100%, 760px);
+    height: auto;
+    overflow: visible;
+}
+
+.landing-link {
+    display: inline-flex;
+    min-height: 2.8rem;
+    padding: 0.75rem 1rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(135, 247, 199, 0.62);
+    background: linear-gradient(135deg, #183b31, #102a24);
+    color: var(--signal-strong);
+    font-family: "IBM Plex Mono", Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 20px rgba(135, 247, 199, 0.05);
+    transition: border-color 150ms ease, box-shadow 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.landing-link:hover {
+    border-color: var(--signal);
+    color: var(--ink);
+    box-shadow: 0 0 22px rgba(135, 247, 199, 0.17), inset 0 0 24px rgba(135, 247, 199, 0.08);
+    transform: translateY(-1px);
+}
+
+.landing-link:focus-visible {
+    outline: 1px solid var(--signal);
+    outline-offset: 3px;
 }

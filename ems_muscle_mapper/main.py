@@ -2,8 +2,10 @@ import logging
 import base64
 import hashlib
 from collections import OrderedDict
+from pathlib import Path
 from threading import Lock
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
@@ -28,8 +30,9 @@ from services.image_normalizer import InvalidImageError, normalize_image_orienta
 from schemas import AccuracyFeedback, MuscleAnalysisResult
 
 logger = logging.getLogger(__name__)
-app = FastAPI(title="EMS Muscle Mapper")
-app.mount("/static", StaticFiles(directory="templates"), name="static")
+LANDING_PAGE = Path(__file__).resolve().parent.parent / "index.html"
+mapper_app = FastAPI(title="EMS Muscle Mapper")
+mapper_app.mount("/static", StaticFiles(directory="templates"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 _CACHE_MAX_PAIRS = 32
@@ -65,12 +68,12 @@ def _build_result(
     }
 
 
-@app.get("/")
+@mapper_app.get("/")
 async def home(request: Request):
     """Render the frontend and its reusable HTML partials."""
     return templates.TemplateResponse(request=request, name="index.html")
 
-@app.post("/analyze")
+@mapper_app.post("/analyze")
 async def process_images(lax_image: UploadFile = File(...), flexed_image: UploadFile = File(...)):
     """Receives the two images, processes them, and returns an annotated image."""
     lax_bytes = await lax_image.read()
@@ -172,7 +175,7 @@ async def process_images(lax_image: UploadFile = File(...), flexed_image: Upload
         ) from exc
 
 
-@app.post("/feedback", status_code=202)
+@mapper_app.post("/feedback", status_code=202)
 async def record_accuracy_feedback(feedback: AccuracyFeedback):
     """Record whether the user accepted the current mapping."""
     logger.info(
@@ -183,7 +186,7 @@ async def record_accuracy_feedback(feedback: AccuracyFeedback):
     return {"status": "received"}
 
 
-@app.post("/refine")
+@mapper_app.post("/refine")
 async def refine_images(
     lax_image: UploadFile = File(...),
     flexed_image: UploadFile = File(...),
@@ -301,3 +304,15 @@ async def refine_images(
             status_code=500,
             detail="Refinement failed unexpectedly. Check the server log.",
         ) from exc
+
+
+app = FastAPI(title="EMS Muscle Tools")
+
+
+@app.get("/")
+async def landing():
+    """Render the parent site's landing page."""
+    return FileResponse(LANDING_PAGE)
+
+
+app.mount("/ems-muscle-mapper", mapper_app, name="ems-muscle-mapper")
