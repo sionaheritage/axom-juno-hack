@@ -1,18 +1,26 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+import os
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, Response
-from fastapi.templating import Jinja2Templates
 
 from services.arm_validator import verify_arm_presence
 from services.vlm_analyzer import analyze_muscle_movement
 from services.image_processor import draw_ems_ui
 
 app = FastAPI(title="EMS Muscle Mapper")
-templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    """Renders the frontend upload interface."""
-    return templates.TemplateResponse("index.html", {"request": request})
+async def home():
+    """Renders the frontend upload interface natively without a templating engine."""
+    html_path = os.path.join("templates", "index.html")
+    
+    # Read the file natively
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="index.html not found in templates folder.")
+        
+    return HTMLResponse(content=html_content)
 
 @app.post("/analyze")
 async def process_images(lax_image: UploadFile = File(...), flexed_image: UploadFile = File(...)):
@@ -20,7 +28,7 @@ async def process_images(lax_image: UploadFile = File(...), flexed_image: Upload
     lax_bytes = await lax_image.read()
     flexed_bytes = await flexed_image.read()
     
-    # 1. Edge-Compute Validation (MediaPipe)
+    # 1. Edge-Compute Validation (YOLO-Pose)
     if not verify_arm_presence(lax_bytes) or not verify_arm_presence(flexed_bytes):
         raise HTTPException(
             status_code=400, 
