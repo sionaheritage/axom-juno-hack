@@ -68,8 +68,10 @@ async def process_images(lax_image: UploadFile = File(...), flexed_image: Upload
             lax_region.image_bytes,
             flexed_region.image_bytes,
             arm_side=flexed_region.side,
+            pose_context=flexed_region.pose_prompt_context(),
         )
-        analysis_result = flexed_region.map_analysis_to_source(crop_analysis)
+        refined_crop_analysis = flexed_region.refine_crop_analysis(crop_analysis)
+        analysis_result = flexed_region.map_analysis_to_source(refined_crop_analysis)
         
         # 4. Render onto the same oriented pixels used by YOLO and OpenAI.
         processed_image = draw_ems_ui(normalized_flexed, analysis_result)

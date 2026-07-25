@@ -9,6 +9,7 @@ from services.arm_validator import pose_model
 
 
 ArmSide = Literal["left", "right"]
+ImageSide = Literal["left", "right", "uncertain"]
 
 
 class ArmNotFoundError(ValueError):
@@ -25,6 +26,10 @@ class ArmRegion:
     bottom: int
     source_width: int
     source_height: int
+    shoulder_crop: tuple[float, float] | None = None
+    elbow_crop: tuple[float, float] | None = None
+    wrist_crop: tuple[float, float] | None = None
+    flexion_side: ImageSide = "uncertain"
 
     @property
     def width(self) -> int:
@@ -63,6 +68,93 @@ class ArmRegion:
                 pad.y = map_y(pad.y)
 
         return mapped
+
+    def pose_prompt_context(self) -> str:
+        """Describe the detected anatomy in crop-normalized coordinates."""
+        if not self.shoulder_crop or not self.elbow_crop or not self.wrist_crop:
+            return (
+                f"YOLO identifies this as the subject's {self.side} arm. "
+                "Detailed joint geometry is unavailable."
+            )
+
+        context = (
+            f"YOLO identifies this as the subject's {self.side} arm. "
+            f"In second-crop coordinates, shoulder={_format_point(self.shoulder_crop)}, "
+            f"elbow={_format_point(self.elbow_crop)}, and "
+            f"wrist={_format_point(self.wrist_crop)}. "
+            "The wrist may lie outside the upper-arm crop."
+        )
+        if self.flexion_side != "uncertain":
+            context += (
+                f" The forearm bends toward the {self.flexion_side} side of the "
+                "crop. For elbow flexion, biceps belongs on that flexion/anterior "
+                "side and triceps on the opposite side. Do not reverse them."
+            )
+        return context
+
+    def refine_crop_analysis(
+        self, analysis: MuscleAnalysisResult
+    ) -> MuscleAnalysisResult:
+        """
+        Preserve model contours while correcting labels and undersized polygons.
+
+        The VLM remains responsible for the actual contour. Small center-biased
+        polygons are expanded around their own centroid, retaining their vertex
+        order and shape instead of replacing them with a generic rectangle.
+        """
+        refined = analysis.model_copy(deep=True)
+        self._correct_biceps_triceps_labels(refined)
+
+        for muscle in refined.muscles:
+            _expand_small_polygon(muscle.polygon_vertices_normalized)
+        return refined
+
+    def _correct_biceps_triceps_labels(
+        self, analysis: MuscleAnalysisResult
+    ) -> None:
+        if (
+            self.flexion_side == "uncertain"
+            or not self.shoulder_crop
+            or not self.elbow_crop
+        ):
+            return
+
+        biceps = next(
+            (muscle for muscle in analysis.muscles if "bicep" in muscle.name.lower()),
+            None,
+        )
+        triceps = next(
+            (muscle for muscle in analysis.muscles if "tricep" in muscle.name.lower()),
+            None,
+        )
+        if not biceps or not triceps:
+            return
+
+        biceps_score = self._lateral_score(biceps.polygon_vertices_normalized)
+        triceps_score = self._lateral_score(triceps.polygon_vertices_normalized)
+        if biceps_score is None or triceps_score is None:
+            return
+
+        # Positive score means crop-right. Biceps must be on the flexion side.
+        desired_sign = 1.0 if self.flexion_side == "right" else -1.0
+        if biceps_score * desired_sign < triceps_score * desired_sign:
+            biceps.name, triceps.name = triceps.name, biceps.name
+
+    def _lateral_score(self, points) -> float | None:
+        if not points or not self.shoulder_crop or not self.elbow_crop:
+            return None
+
+        shoulder = np.array(self.shoulder_crop, dtype=float)
+        elbow = np.array(self.elbow_crop, dtype=float)
+        axis = elbow - shoulder
+        length = float(np.linalg.norm(axis))
+        if length < 1e-6:
+            return None
+
+        centroid = np.mean([[point.x, point.y] for point in points], axis=0)
+        midpoint = (shoulder + elbow) / 2.0
+        crop_right_normal = np.array([axis[1], -axis[0]]) / length
+        return float(np.dot(centroid - midpoint, crop_right_normal))
 
 
 def extract_arm_region(
@@ -113,7 +205,7 @@ def extract_arm_region(
     _, side, points = max(candidates, key=lambda candidate: candidate[0])
     source_height, source_width = image.shape[:2]
 
-    shoulder, elbow, _wrist = points
+    shoulder, elbow, wrist = points
     crop_points = np.array([shoulder, elbow])
     upper_arm_length = float(np.linalg.norm(shoulder - elbow))
     padding = max(24, int(round(upper_arm_length * 0.22)))
@@ -137,6 +229,12 @@ def extract_arm_region(
     if not encoded:
         raise ArmNotFoundError("The detected arm region could not be encoded.")
 
+    def to_crop_coordinates(point: np.ndarray) -> tuple[float, float]:
+        return (
+            float((point[0] - left) / (right - left)),
+            float((point[1] - top) / (bottom - top)),
+        )
+
     return ArmRegion(
         image_bytes=buffer.tobytes(),
         side=side,
@@ -146,7 +244,66 @@ def extract_arm_region(
         bottom=bottom,
         source_width=source_width,
         source_height=source_height,
+        shoulder_crop=to_crop_coordinates(shoulder),
+        elbow_crop=to_crop_coordinates(elbow),
+        wrist_crop=to_crop_coordinates(wrist),
+        flexion_side=_infer_flexion_side(shoulder, elbow, wrist),
     )
+
+
+def _expand_small_polygon(
+    points,
+    minimum_bbox_area: float = 0.08,
+    minimum_major_span: float = 0.45,
+    maximum_scale: float = 2.2,
+) -> None:
+    """Expand only undersized polygons, preserving their contour and centroid."""
+    if len(points) < 3:
+        return
+
+    coordinates = np.array([[point.x, point.y] for point in points], dtype=float)
+    minimum = coordinates.min(axis=0)
+    maximum = coordinates.max(axis=0)
+    spans = maximum - minimum
+    bbox_area = float(spans[0] * spans[1])
+    major_span = float(max(spans))
+
+    area_scale = (
+        np.sqrt(minimum_bbox_area / bbox_area) if bbox_area > 1e-8 else maximum_scale
+    )
+    span_scale = (
+        minimum_major_span / major_span if major_span > 1e-8 else maximum_scale
+    )
+    scale = min(maximum_scale, max(1.0, area_scale, span_scale))
+    if scale <= 1.0:
+        return
+
+    centroid = coordinates.mean(axis=0)
+    expanded = centroid + (coordinates - centroid) * scale
+    expanded = np.clip(expanded, 0.01, 0.99)
+    for point, (x, y) in zip(points, expanded):
+        point.x = float(x)
+        point.y = float(y)
+
+
+def _infer_flexion_side(
+    shoulder: np.ndarray, elbow: np.ndarray, wrist: np.ndarray
+) -> ImageSide:
+    upper_arm = elbow - shoulder
+    length = float(np.linalg.norm(upper_arm))
+    if length < 1.0:
+        return "uncertain"
+
+    midpoint = (shoulder + elbow) / 2.0
+    image_right_normal = np.array([upper_arm[1], -upper_arm[0]])
+    signed_distance = float(np.dot(wrist - midpoint, image_right_normal) / length)
+    if abs(signed_distance) < max(5.0, length * 0.03):
+        return "uncertain"
+    return "right" if signed_distance > 0 else "left"
+
+
+def _format_point(point: tuple[float, float]) -> str:
+    return f"({point[0]:.3f}, {point[1]:.3f})"
 
 
 def _arm_error_message(preferred_side: ArmSide | None) -> str:

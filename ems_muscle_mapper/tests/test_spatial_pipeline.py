@@ -8,8 +8,12 @@ import numpy as np
 from PIL import Image
 
 from schemas import MuscleAnalysisResult
-from services.arm_region import ArmRegion, extract_arm_region
-from services.image_processor import build_alt_text
+from services.arm_region import ArmRegion, _infer_flexion_side, extract_arm_region
+from services.image_processor import (
+    _boxes_overlap,
+    _choose_label_position,
+    build_alt_text,
+)
 from services.image_normalizer import normalize_image_orientation
 
 
@@ -58,6 +62,73 @@ class SpatialPipelineTests(unittest.TestCase):
         self.assertLess(region.right, image.shape[1] // 2)
         self.assertEqual(region.source_width, 240)
         self.assertEqual(region.source_height, 120)
+        self.assertIsNotNone(region.shoulder_crop)
+        self.assertIsNotNone(region.elbow_crop)
+        self.assertIsNotNone(region.wrist_crop)
+        self.assertIn("subject's left arm", region.pose_prompt_context())
+
+    def test_demo_pose_places_biceps_on_right_side_of_crop(self):
+        shoulder = np.array([288.6, 478.6])
+        elbow = np.array([404.1, 1534.3])
+        wrist = np.array([1092.8, 1212.3])
+
+        self.assertEqual(_infer_flexion_side(shoulder, elbow, wrist), "right")
+
+    def test_refinement_enlarges_shape_and_corrects_reversed_labels(self):
+        region = ArmRegion(
+            image_bytes=b"crop",
+            side="right",
+            left=0,
+            top=0,
+            right=100,
+            bottom=100,
+            source_width=100,
+            source_height=100,
+            shoulder_crop=(0.5, 0.1),
+            elbow_crop=(0.5, 0.9),
+            wrist_crop=(1.2, 0.7),
+            flexion_side="right",
+        )
+        analysis = MuscleAnalysisResult.model_validate(
+            {
+                "movement_detected": "Elbow flexion",
+                "muscles": [
+                    {
+                        "name": "Biceps",
+                        "polygon_vertices_normalized": [
+                            {"x": 0.25, "y": 0.4},
+                            {"x": 0.35, "y": 0.4},
+                            {"x": 0.35, "y": 0.6},
+                            {"x": 0.25, "y": 0.6},
+                        ],
+                        "color_hex": "#ff0000",
+                        "ems_pads_normalized": [],
+                    },
+                    {
+                        "name": "Triceps",
+                        "polygon_vertices_normalized": [
+                            {"x": 0.65, "y": 0.4},
+                            {"x": 0.75, "y": 0.4},
+                            {"x": 0.75, "y": 0.6},
+                            {"x": 0.65, "y": 0.6},
+                        ],
+                        "color_hex": "#00ff00",
+                        "ems_pads_normalized": [],
+                    },
+                ],
+            }
+        )
+
+        refined = region.refine_crop_analysis(analysis)
+
+        self.assertEqual(refined.muscles[0].name, "Triceps")
+        self.assertEqual(refined.muscles[1].name, "Biceps")
+        for muscle in refined.muscles:
+            xs = [point.x for point in muscle.polygon_vertices_normalized]
+            ys = [point.y for point in muscle.polygon_vertices_normalized]
+            self.assertGreaterEqual((max(xs) - min(xs)) * (max(ys) - min(ys)), 0.079)
+        # Refinement does not mutate the raw API result.
+        self.assertEqual(analysis.muscles[0].name, "Biceps")
 
     def test_crop_coordinates_map_back_to_source(self):
         crop = ArmRegion(
@@ -131,6 +202,22 @@ class SpatialPipelineTests(unittest.TestCase):
         self.assertIn("Bicep flexing", description)
         self.assertIn("Biceps", description)
         self.assertIn("Proximal, Distal", description)
+
+    def test_all_pointer_labels_receive_non_overlapping_boxes(self):
+        pointer = (250, 200)
+        occupied = []
+        origins = []
+        for label in ["Biceps", "Triceps", "Proximal", "Distal"]:
+            origin, bounds = _choose_label_position(
+                label, pointer, 1.0, 600, 500, occupied
+            )
+            self.assertFalse(
+                any(_boxes_overlap(bounds, previous) for previous in occupied)
+            )
+            occupied.append(bounds)
+            origins.append(origin)
+
+        self.assertTrue(any(origin[0] < pointer[0] for origin in origins))
 
 
 if __name__ == "__main__":

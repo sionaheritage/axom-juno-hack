@@ -125,7 +125,15 @@ class APIIntegrationTests(unittest.TestCase):
         )
 
         with patch.dict(os.environ, {"OPENAI_MODEL": "gpt-4o"}):
-            result = vlm_analyzer.analyze_muscle_movement(PNG_BYTES, JPEG_BYTES)
+            result = vlm_analyzer.analyze_muscle_movement(
+                PNG_BYTES,
+                JPEG_BYTES,
+                arm_side="right",
+                pose_context=(
+                    "The forearm bends toward the right side of the crop; "
+                    "biceps belongs on that side."
+                ),
+            )
 
         content = captured["messages"][0]["content"]
         self.assertTrue(
@@ -137,6 +145,8 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertEqual(captured["model"], "gpt-4o")
         self.assertEqual(content[1]["image_url"]["detail"], "high")
         self.assertEqual(content[2]["image_url"]["detail"], "high")
+        self.assertIn("subject's right arm", content[0]["text"])
+        self.assertIn("forearm bends toward the right side", content[0]["text"])
         self.assertIs(result, parsed)
 
     def test_api_key_is_read_from_the_environment(self):

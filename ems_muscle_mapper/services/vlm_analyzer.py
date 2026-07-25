@@ -70,6 +70,7 @@ def analyze_muscle_movement(
     lax_bytes: bytes,
     flexed_bytes: bytes,
     arm_side: str | None = None,
+    pose_context: str | None = None,
 ) -> MuscleAnalysisResult:
     """Sends images to a VLM to extract specific spatial coordinates for muscles and EMS pads."""
     lax_b64 = base64.b64encode(lax_bytes).decode('utf-8')
@@ -78,16 +79,29 @@ def analyze_muscle_movement(
     flexed_media_type = _image_media_type(flexed_bytes)
     
     selected_arm = f"the subject's {arm_side} arm" if arm_side else "the same arm"
+    spatial_context = pose_context or (
+        "No pose geometry is available; infer anterior and posterior surfaces "
+        "carefully from the visible elbow bend."
+    )
     prompt = f"""
     These are tight crops around the UPPER ARM (shoulder to elbow) of
     {selected_arm}. The first image is relaxed and the second image is
     tensed/flexed. Analyze only the upper arm in these crops.
 
+    POSE GROUNDING FROM YOLO:
+    {spatial_context}
+
     1. Identify the movement by comparing the first and second images.
     2. Identify the primary visibly tensed muscles. Prioritize large arm
        movements; only consider finger movement when the arm has not changed.
+       Distinguish anatomical surfaces before assigning names: biceps is on
+       the anterior/flexion side of the upper arm and triceps is posterior,
+       opposite the elbow's closing direction. Never swap a correctly located
+       biceps region with a triceps label.
     3. In the SECOND CROP, trace each affected visible muscle region with 6-8
-       polygon vertices ordered clockwise around its boundary.
+       polygon vertices ordered clockwise around its OUTER boundary. Cover the
+       full visible length and width of the muscle belly. Follow the curved arm
+       contour; do not return a small box or thin shape near the crop center.
     4. Return all polygon and EMS pad coordinates relative to the SECOND CROP:
        - origin (0, 0) is exactly the TOP-LEFT corner
        - x=0 is the LEFT edge and x=1 is the RIGHT edge
