@@ -21,3 +21,12 @@ class MuscleGroup(BaseModel):
 class MuscleAnalysisResult(BaseModel):
     movement_detected: str
     muscles: List[MuscleGroup]
+
+
+class AccuracyFeedback(BaseModel):
+    analysis_id: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    accurate: bool

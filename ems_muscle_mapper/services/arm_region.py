@@ -69,6 +69,30 @@ class ArmRegion:
 
         return mapped
 
+    def map_analysis_to_crop(
+        self, analysis: MuscleAnalysisResult
+    ) -> MuscleAnalysisResult:
+        """Map source-normalized coordinates into this arm crop."""
+        mapped = analysis.model_copy(deep=True)
+
+        def map_x(value: float) -> float:
+            source_x = min(1.0, max(0.0, value)) * self.source_width
+            return min(1.0, max(0.0, (source_x - self.left) / self.width))
+
+        def map_y(value: float) -> float:
+            source_y = min(1.0, max(0.0, value)) * self.source_height
+            return min(1.0, max(0.0, (source_y - self.top) / self.height))
+
+        for muscle in mapped.muscles:
+            for point in muscle.polygon_vertices_normalized:
+                point.x = map_x(point.x)
+                point.y = map_y(point.y)
+            for pad in muscle.ems_pads_normalized:
+                pad.x = map_x(pad.x)
+                pad.y = map_y(pad.y)
+
+        return mapped
+
     def pose_prompt_context(self) -> str:
         """Describe the detected anatomy in crop-normalized coordinates."""
         if not self.shoulder_crop or not self.elbow_crop or not self.wrist_crop:

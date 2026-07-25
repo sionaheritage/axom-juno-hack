@@ -254,6 +254,17 @@ class SpatialPipelineTests(unittest.TestCase):
         # Mapping is non-mutating.
         self.assertEqual(analysis.muscles[0].polygon_vertices_normalized[0].x, 0.0)
 
+        round_trip = crop.map_analysis_to_crop(mapped)
+        for original_point, round_trip_point in zip(
+            analysis.muscles[0].polygon_vertices_normalized,
+            round_trip.muscles[0].polygon_vertices_normalized,
+        ):
+            self.assertAlmostEqual(round_trip_point.x, original_point.x)
+            self.assertAlmostEqual(round_trip_point.y, original_point.y)
+        round_trip_pad = round_trip.muscles[0].ems_pads_normalized[0]
+        self.assertAlmostEqual(round_trip_pad.x, 0.5)
+        self.assertAlmostEqual(round_trip_pad.y, 0.5)
+
     def test_alt_text_describes_movement_muscle_and_pads(self):
         analysis = MuscleAnalysisResult.model_validate(
             {

@@ -46,6 +46,29 @@
                 <label for="altText">Alt text</label>
                 <textarea id="altText" rows="4" readonly></textarea>
             </div>
+            <section class="feedback-panel" aria-labelledby="accuracyQuestion">
+                <p class="feedback-question" id="accuracyQuestion">Is this accurate?</p>
+                <div class="feedback-actions" aria-label="Mapping accuracy">
+                    <button class="feedback-icon" id="thumbUpButton" type="button"
+                        aria-label="Yes, this mapping is accurate" aria-pressed="false">
+                        <span aria-hidden="true">👍</span>
+                    </button>
+                    <button class="feedback-icon" id="thumbDownButton" type="button"
+                        aria-label="No, this mapping needs correcting" aria-pressed="false">
+                        <span aria-hidden="true">👎</span>
+                    </button>
+                </div>
+
+                <div class="correction-panel" id="correctionPanel" hidden>
+                    <label for="correctionText">What is wrong?</label>
+                    <textarea id="correctionText" rows="3" maxlength="1000"
+                        placeholder="For example: the biceps outline is too low, and the distal pad should move toward the elbow."></textarea>
+                    <button class="refine-button" id="submitCorrection" type="button">
+                        Refine mapping
+                    </button>
+                </div>
+                <p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p>
+            </section>
         </div>
     </div>
 

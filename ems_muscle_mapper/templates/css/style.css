@@ -159,3 +159,106 @@ button:hover {
     line-height: 1.5;
     resize: vertical;
 }
+
+.feedback-panel {
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid #dcebe0;
+    text-align: left;
+}
+
+.feedback-question {
+    display: inline-block;
+    margin: 0 0.65rem 0 0;
+    color: #425d45;
+    font-size: 0.85rem;
+    line-height: 2.25rem;
+    vertical-align: top;
+}
+
+.feedback-actions {
+    display: inline-flex;
+    gap: 0.45rem;
+}
+
+button.feedback-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid #b8dbbf;
+    border-radius: 50%;
+    background: #f8fbf8;
+    color: #193925;
+    box-shadow: none;
+    font-size: 1rem;
+    letter-spacing: 0;
+    line-height: 1;
+}
+
+button.feedback-icon:hover {
+    transform: translateY(-1px);
+    border-color: #3f8b59;
+    box-shadow: 0 5px 12px rgba(47, 142, 78, 0.12);
+}
+
+button.feedback-icon.is-selected {
+    border-color: #2f8f56;
+    background: #e4f4e9;
+    box-shadow: 0 0 0 3px rgba(47, 143, 86, 0.12);
+}
+
+.correction-panel {
+    margin-top: 0.85rem;
+    padding: 0.9rem;
+    border: 1px solid #c7e2cd;
+    border-radius: 10px;
+    background: #f8fbf8;
+}
+
+.correction-panel[hidden] {
+    display: none;
+}
+
+.correction-panel label {
+    margin-bottom: 0.45rem;
+    font-size: 0.85rem;
+}
+
+#correctionText {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #b8dbbf;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #243b2d;
+    font: inherit;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    resize: vertical;
+}
+
+#correctionText:focus {
+    outline: none;
+    border-color: #3f8b59;
+    box-shadow: 0 0 0 3px rgba(63, 139, 89, 0.13);
+}
+
+button.refine-button {
+    width: auto;
+    margin-top: 0.7rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.88rem;
+}
+
+.feedback-status {
+    min-height: 1.25rem;
+    margin: 0.55rem 0 0;
+    color: #425d45;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.feedback-status.is-error {
+    color: #9b1c1c;
+}
