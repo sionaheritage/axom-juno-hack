@@ -12,13 +12,14 @@ from openai import (
     RateLimitError,
 )
 
-from services.arm_validator import verify_arm_presence
+from services.arm_region import ArmNotFoundError, extract_arm_region
 from services.vlm_analyzer import (
     APIConfigurationError,
     UnsupportedImageError,
     analyze_muscle_movement,
 )
 from services.image_processor import draw_ems_ui
+from services.image_normalizer import InvalidImageError, normalize_image_orientation
 
 logger = logging.getLogger(__name__)
 app = FastAPI(title="EMS Muscle Mapper")
@@ -47,23 +48,34 @@ async def process_images(lax_image: UploadFile = File(...), flexed_image: Upload
     if not lax_bytes or not flexed_bytes:
         raise HTTPException(status_code=400, detail="Both uploaded images must contain data.")
     
-    # 1. Edge-Compute Validation (YOLO-Pose)
-    if not verify_arm_presence(lax_bytes) or not verify_arm_presence(flexed_bytes):
-        raise HTTPException(
-            status_code=400, 
-            detail="Could not detect a clear arm in one or both images. Ensure your elbow and wrist are visible."
-        )
-        
     try:
-        # 2. VLM Spatial Grounding
-        analysis_result = analyze_muscle_movement(lax_bytes, flexed_bytes)
+        # 1. Apply EXIF orientation and strip metadata once. Every downstream
+        # service now sees the exact same upright pixels.
+        normalized_lax = normalize_image_orientation(lax_bytes)
+        normalized_flexed = normalize_image_orientation(flexed_bytes)
+
+        # 2. Use the flexed image to choose an arm, then require the same
+        # anatomical side in the relaxed image.
+        flexed_region = extract_arm_region(normalized_flexed)
+        lax_region = extract_arm_region(
+            normalized_lax, preferred_side=flexed_region.side
+        )
+
+        # 3. Ask the VLM about the compact arm crops, then map its crop-relative
+        # coordinates back to the full, normalized flexed image.
+        crop_analysis = analyze_muscle_movement(
+            lax_region.image_bytes,
+            flexed_region.image_bytes,
+            arm_side=flexed_region.side,
+        )
+        analysis_result = flexed_region.map_analysis_to_source(crop_analysis)
         
-        # 3. OpenCV Rendering
-        processed_image = draw_ems_ui(flexed_bytes, analysis_result)
+        # 4. Render onto the same oriented pixels used by YOLO and OpenAI.
+        processed_image = draw_ems_ui(normalized_flexed, analysis_result)
         
         return Response(content=processed_image, media_type="image/jpeg")
         
-    except UnsupportedImageError as exc:
+    except (InvalidImageError, ArmNotFoundError, UnsupportedImageError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except APIConfigurationError as exc:
         logger.error("OpenAI configuration error: %s", exc)

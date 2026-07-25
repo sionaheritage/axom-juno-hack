@@ -14,6 +14,8 @@ def draw_ems_ui(image_bytes: bytes, analysis: MuscleAnalysisResult) -> bytes:
     """Overlays polygons, dots, and labels over the flexed image."""
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise ValueError("The normalized flexed image could not be decoded.")
     overlay = img.copy()
     
     h, w = img.shape[:2]
@@ -21,7 +23,16 @@ def draw_ems_ui(image_bytes: bytes, analysis: MuscleAnalysisResult) -> bytes:
     # 1. Draw Transparent Polygons first
     for muscle in analysis.muscles:
         color_bgr = _hex_to_bgr(muscle.color_hex)
-        pts = np.array([[int(pt.x * w), int(pt.y * h)] for pt in muscle.polygon_vertices_normalized], np.int32)
+        pts = np.array(
+            [
+                [
+                    min(w - 1, max(0, int(pt.x * w))),
+                    min(h - 1, max(0, int(pt.y * h))),
+                ]
+                for pt in muscle.polygon_vertices_normalized
+            ],
+            np.int32,
+        )
         pts = pts.reshape((-1, 1, 2))
         cv2.fillPoly(overlay, [pts], color_bgr)
         
@@ -45,7 +56,8 @@ def draw_ems_ui(image_bytes: bytes, analysis: MuscleAnalysisResult) -> bytes:
         
         # EMS Pad Markers
         for pad in muscle.ems_pads_normalized:
-            pad_x, pad_y = int(pad.x * w), int(pad.y * h)
+            pad_x = min(w - 1, max(0, int(pad.x * w)))
+            pad_y = min(h - 1, max(0, int(pad.y * h)))
             # White inner dot, distinct colored outer ring
             cv2.circle(img, (pad_x, pad_y), 8, (255, 255, 255), -1) 
             cv2.circle(img, (pad_x, pad_y), 12, (0, 150, 255), 3)     

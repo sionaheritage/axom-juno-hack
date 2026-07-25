@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 import main
 from schemas import MuscleAnalysisResult
+from services.arm_region import ArmRegion
 from services import vlm_analyzer
 
 
@@ -24,9 +25,22 @@ class APIIntegrationTests(unittest.TestCase):
     def test_missing_api_key_returns_service_unavailable(self):
         vlm_analyzer._client = None
 
+        def fake_arm_region(image_bytes, preferred_side=None):
+            return ArmRegion(
+                image_bytes=image_bytes,
+                side=preferred_side or "left",
+                left=0,
+                top=0,
+                right=100,
+                bottom=100,
+                source_width=100,
+                source_height=100,
+            )
+
         with (
             patch.dict(os.environ, {}, clear=False),
-            patch.object(main, "verify_arm_presence", return_value=True),
+            patch.object(main, "normalize_image_orientation", side_effect=lambda value: value),
+            patch.object(main, "extract_arm_region", side_effect=fake_arm_region),
         ):
             os.environ.pop("OPENAI_API_KEY", None)
             response = TestClient(main.app).post(
@@ -68,6 +82,8 @@ class APIIntegrationTests(unittest.TestCase):
             content[2]["image_url"]["url"].startswith("data:image/jpeg;base64,")
         )
         self.assertEqual(captured["model"], "gpt-4o")
+        self.assertEqual(content[1]["image_url"]["detail"], "high")
+        self.assertEqual(content[2]["image_url"]["detail"], "high")
         self.assertIs(result, parsed)
 
     def test_api_key_is_read_from_the_environment(self):

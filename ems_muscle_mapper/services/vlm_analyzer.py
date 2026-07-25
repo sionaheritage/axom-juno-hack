@@ -66,19 +66,35 @@ def _image_media_type(image_bytes: bytes) -> str:
         "Unsupported image format. Upload a JPEG, PNG, GIF, or WebP image."
     )
 
-def analyze_muscle_movement(lax_bytes: bytes, flexed_bytes: bytes) -> MuscleAnalysisResult:
+def analyze_muscle_movement(
+    lax_bytes: bytes,
+    flexed_bytes: bytes,
+    arm_side: str | None = None,
+) -> MuscleAnalysisResult:
     """Sends images to a VLM to extract specific spatial coordinates for muscles and EMS pads."""
     lax_b64 = base64.b64encode(lax_bytes).decode('utf-8')
     flexed_b64 = base64.b64encode(flexed_bytes).decode('utf-8')
     lax_media_type = _image_media_type(lax_bytes)
     flexed_media_type = _image_media_type(flexed_bytes)
     
-    prompt = """
-    Analyze these two images: the first is a relaxed arm, the second is a tensed/flexed arm.
-    1. Identify the movement being performed.
-    2. Identify the primary tensed muscles.
-    3. Provide the bounding polygon vertices (as normalized coordinates 0.0 to 1.0) for each tensed muscle in the FLEXED image. Keep polygons simple (4-6 points).
-    4. Calculate the optimal EMS pad placement points (normalized coordinates 0.0 to 1.0) for these muscles. A muscle typically needs a Proximal and Distal pad.
+    selected_arm = f"the subject's {arm_side} arm" if arm_side else "the same arm"
+    prompt = f"""
+    These are tight crops around {selected_arm}. The first image is relaxed and
+    the second image is tensed/flexed. Analyze only the arm in these crops.
+
+    1. Identify the movement by comparing the first and second images.
+    2. Identify the primary visibly tensed muscles. Prioritize large arm
+       movements; only consider finger movement when the arm has not changed.
+    3. In the SECOND CROP, trace each affected visible muscle region with 6-8
+       polygon vertices ordered clockwise around its boundary.
+    4. Return all polygon and EMS pad coordinates relative to the SECOND CROP:
+       - origin (0, 0) is its top-left corner
+       - x increases left-to-right; y increases top-to-bottom
+       - x = pixel_x / crop_width; y = pixel_y / crop_height
+       - every value must be between 0.0 and 1.0
+       - every vertex and pad must lie on visible arm pixels, not at a generic
+         anatomical location or at the crop center by default
+    5. Return at least a proximal and distal EMS pad for each muscle.
     """
     
     response = _get_client().beta.chat.completions.parse(
@@ -88,8 +104,20 @@ def analyze_muscle_movement(lax_bytes: bytes, flexed_bytes: bytes) -> MuscleAnal
                 "role": "user",
                 "content": [
                     {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {"url": f"data:{lax_media_type};base64,{lax_b64}"}},
-                    {"type": "image_url", "image_url": {"url": f"data:{flexed_media_type};base64,{flexed_b64}"}}
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{lax_media_type};base64,{lax_b64}",
+                            "detail": "high",
+                        },
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{flexed_media_type};base64,{flexed_b64}",
+                            "detail": "high",
+                        },
+                    },
                 ]
             }
         ],
