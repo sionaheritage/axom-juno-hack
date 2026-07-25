@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from services.mediapipe_validator import verify_arm_presence
+from services.arm_validator import verify_arm_presence
 from services.vlm_analyzer import analyze_muscle_movement
 from services.image_processor import draw_ems_ui
 
