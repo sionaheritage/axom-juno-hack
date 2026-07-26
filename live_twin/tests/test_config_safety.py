@@ -1,6 +1,6 @@
 import pytest
 
-from backend import config
+from live_twin.backend import config
 
 
 def test_real_mode_blocked_by_default():

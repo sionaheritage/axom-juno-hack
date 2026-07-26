@@ -4,8 +4,8 @@ from typing import Literal
 import cv2
 import numpy as np
 
-from schemas import MuscleAnalysisResult
-from services.arm_validator import pose_model
+from ems_muscle_mapper.schemas import MuscleAnalysisResult
+from ems_muscle_mapper.services.arm_validator import pose_model
 
 
 ArmSide = Literal["left", "right"]

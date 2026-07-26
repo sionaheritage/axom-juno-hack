@@ -1,4 +1,9 @@
-# Motor Recovery System — hackathon build
+# Live Twin — motor recovery system
+
+> This application is integrated into the parent Axon repository and mounted
+> at `/live-twin/`. Run commands from the parent repository root using its
+> canonical `pyproject.toml` and `uv.lock`. The public live routes are
+> `/live-twin/ws`, `/live-twin/camera.mjpeg`, and `/live-twin/placement`.
 
 TENS-pad system to help people relearn arm/hand motions post-injury.
 Camera → pose estimation → 3D digital twin → user picks a target motion →
@@ -155,7 +160,7 @@ there is nothing here for it to call. Full contract in
 is their `POSE_API.md`.
 
 ```
-POSE_UDP_ENABLED=true POSE_UDP_HOST=<controller ip> uv run uvicorn backend.main:app
+POSE_UDP_ENABLED=true POSE_UDP_HOST=<controller ip> uv run uvicorn main:app
 ```
 
 Off by default on purpose: enabling it starts sending pose to whatever is
@@ -280,9 +285,9 @@ Env is managed with [uv](https://docs.astral.sh/uv/) — `uv sync` installs
 everything from `pyproject.toml`/`uv.lock`, no manual venv/pip needed.
 
 ```
-uv sync
-uv run python scripts/download_pose_model.py   # one-off, fetches models/pose_landmarker_lite.task (not committed)
-uv run uvicorn backend.main:app --reload
+uv sync --dev
+uv run python live_twin/scripts/download_pose_model.py
+uv run uvicorn main:app --reload
 ```
 
 Note: `mediapipe`'s old `mp.solutions.pose` API is gone as of 0.10.35 — this
@@ -295,13 +300,10 @@ Tests (safe to run anytime, no hardware/camera needed):
 uv run pytest
 ```
 
-`frontend/twin.html` loads real muscle meshes over `fetch`, which browsers
-block on `file://` pages — serve it locally instead of double-clicking it:
-```
-python -m http.server 8080 --directory frontend
-```
-then open `http://localhost:8080/twin.html` (with the backend running
-separately per above).
+The integrated FastAPI app renders `live_twin/frontend/twin.html` through
+Jinja and serves its models and voice files below `/live-twin/assets/`. Open
+`http://127.0.0.1:8000/live-twin/`. The page derives mounted WebSocket and
+camera URLs automatically; `?ws=` and `?camera=` overrides remain available.
 
 ### Tuning tape color and placement offsets on-site
 
@@ -312,14 +314,14 @@ without touching code:
 ```
 WRIST_PAD_OFFSET_PCT=0.12 DELT_PAD_OFFSET_PCT=0.15 \
 MARKER_HSV_LOWER=140,80,80 MARKER_HSV_UPPER=170,255,255 \
-uv run uvicorn backend.main:app --reload
+uv run uvicorn main:app --reload
 ```
 
 To get real `MARKER_HSV_*` values instead of guessing: take a photo of the
 actual tape, open it in any viewer to read off the pixel coordinates of one
 dot, then run
 ```
-uv run python scripts/calibrate_tape_color.py <photo path> <x> <y>
+uv run python live_twin/scripts/calibrate_tape_color.py <photo path> <x> <y>
 ```
 It prints the two env vars to export and writes `<photo path>_mask.png` —
 open that and confirm it's white only where the tape dots are (nothing

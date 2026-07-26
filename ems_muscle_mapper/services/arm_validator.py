@@ -2,9 +2,21 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-# Load the lightweight YOLO pose model (downloads automatically on first run)
-# We use the nano ('n') model for millisecond-level inference
-pose_model = YOLO('yolov8n-pose.pt')
+
+class _LazyPoseModel:
+    """Defer the heavy YOLO load/download until an analysis actually needs it."""
+
+    def __init__(self):
+        self._model = None
+
+    def __call__(self, *args, **kwargs):
+        if self._model is None:
+            # Ultralytics downloads this lightweight model on first analysis.
+            self._model = YOLO("yolov8n-pose.pt")
+        return self._model(*args, **kwargs)
+
+
+pose_model = _LazyPoseModel()
 
 def verify_arm_presence(image_bytes: bytes) -> bool:
     """Verifies an arm is visible in the image using YOLO Pose."""

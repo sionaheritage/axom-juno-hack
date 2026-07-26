@@ -7,14 +7,14 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from schemas import MuscleAnalysisResult
-from services.arm_region import ArmRegion, _infer_flexion_side, extract_arm_region
-from services.image_processor import (
+from ems_muscle_mapper.schemas import MuscleAnalysisResult
+from ems_muscle_mapper.services.arm_region import ArmRegion, _infer_flexion_side, extract_arm_region
+from ems_muscle_mapper.services.image_processor import (
     _boxes_overlap,
     _choose_label_position,
     build_alt_text,
 )
-from services.image_normalizer import normalize_image_orientation
+from ems_muscle_mapper.services.image_normalizer import normalize_image_orientation
 
 
 class _ArrayWrapper:
@@ -55,7 +55,10 @@ class SpatialPipelineTests(unittest.TestCase):
             keypoints=SimpleNamespace(data=_ArrayWrapper(keypoints))
         )
 
-        with patch("services.arm_region.pose_model", return_value=[fake_result]):
+        with patch(
+            "ems_muscle_mapper.services.arm_region.pose_model",
+            return_value=[fake_result],
+        ):
             region = extract_arm_region(buffer.tobytes())
 
         self.assertEqual(region.side, "left")

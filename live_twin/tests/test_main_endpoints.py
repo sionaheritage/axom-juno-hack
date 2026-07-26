@@ -8,9 +8,20 @@ import io
 
 import numpy as np
 import cv2
+import pytest
 from fastapi.testclient import TestClient
 
-from backend import main
+from live_twin.backend import main
+
+
+@pytest.fixture(autouse=True)
+def avoid_live_camera_runtime(monkeypatch):
+    async def noop():
+        return None
+
+    monkeypatch.setattr(main.runtime, "acquire", noop)
+    monkeypatch.setattr(main.runtime, "release", noop)
+    monkeypatch.setattr(main.runtime, "shutdown", noop)
 
 
 def test_websocket_sends_ready_message_with_armed_state():
@@ -69,7 +80,9 @@ def test_placement_endpoint_returns_422_on_undecodable_upload():
     assert "could not decode" in response.json()["detail"]
 
 
-def test_placement_endpoint_returns_200_with_calibration_incomplete_when_nothing_detected():
+def test_placement_endpoint_returns_200_with_calibration_incomplete_when_nothing_detected(
+    monkeypatch,
+):
     # plain colour images: valid PNGs, but no arm/dots to detect — this
     # should be a normal 200 with calibration_complete=False, not an error.
     files = {
@@ -79,6 +92,15 @@ def test_placement_endpoint_returns_200_with_calibration_incomplete_when_nothing
         "front": ("f.png", _png_bytes(), "image/png"),
         "back": ("bk.png", _png_bytes(), "image/png"),
     }
+
+    monkeypatch.setattr(
+        main,
+        "compute_placement",
+        lambda **_photos: {
+            "calibration_complete": False,
+            "pads": {"wrist": {"ok": False}},
+        },
+    )
 
     response = TestClient(main.app).post("/placement", files=files)
 

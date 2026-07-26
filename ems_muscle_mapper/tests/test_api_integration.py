@@ -5,10 +5,10 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-import main
-from schemas import MuscleAnalysisResult
-from services.arm_region import ArmRegion
-from services import vlm_analyzer
+from ems_muscle_mapper import main
+from ems_muscle_mapper.schemas import MuscleAnalysisResult
+from ems_muscle_mapper.services.arm_region import ArmRegion
+from ems_muscle_mapper.services import vlm_analyzer
 
 
 JPEG_BYTES = b"\xff\xd8\xfftest-image"
@@ -238,11 +238,12 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertEqual(landing_css.status_code, 200)
         self.assertEqual(landing_js.status_code, 200)
         self.assertEqual(hero.headers["content-type"], "image/jpeg")
-        self.assertIn('class="hero-title__x">X</span>', response.text)
-        self.assertIn("Rewiring movement", response.text)
-        self.assertIn("from home.", response.text)
-        self.assertIn('class="hero-nav', response.text)
-        self.assertIn('class="hero-title__accent"', response.text)
+        self.assertIn("From thought", response.text)
+        self.assertIn("To motion.", response.text)
+        self.assertIn('class="hero-title__hand"', response.text)
+        self.assertIn('src="/static/images/hand-hero.png"', response.text)
+        self.assertIn('class="site-header"', response.text)
+        self.assertIn("hero-title__accent", response.text)
         self.assertIn("Digital signal. Human response.", response.text)
         self.assertIn("Register interest", response.text)
         self.assertIn('class="hero-actions', response.text)
@@ -264,9 +265,9 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertIn("@keyframes hero-visual-reveal", landing_css.text)
         self.assertIn("@keyframes hero-scroll-line", landing_css.text)
         self.assertIn('"Arial Black"', landing_css.text)
-        self.assertIn("font-size: clamp(3.25rem, 7.2vw, 6.9rem)", landing_css.text)
-        self.assertIn(".hero-title__x", landing_css.text)
-        self.assertIn(".hero-nav__links", landing_css.text)
+        self.assertIn("font-size: clamp(1.15rem, 4.8vw, 4.8rem)", landing_css.text)
+        self.assertIn(".hero-title__hand", landing_css.text)
+        self.assertIn("@keyframes hero-hand-rise", landing_css.text)
         self.assertIn("IntersectionObserver", landing_js.text)
         self.assertIn("scroll-reveal", landing_js.text)
         self.assertIn("position: fixed", landing_css.text)
@@ -355,7 +356,9 @@ class APIIntegrationTests(unittest.TestCase):
             ".electric-rail--top {\n"
             "    top: 0;\n"
             "    bottom: auto;\n"
-            "    opacity: 0.5;",
+            "    z-index: 4;\n"
+            "    height: clamp(1.8rem, 3.5vh, 2.4rem);\n"
+            "    opacity: 0.9;",
             response.text,
         )
         self.assertIn("@keyframes signal-field-drift", response.text)

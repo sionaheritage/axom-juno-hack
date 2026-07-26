@@ -6,7 +6,7 @@ the joint landmarks.
 """
 from dataclasses import dataclass
 
-from backend import config
+from live_twin.backend import config
 
 
 @dataclass

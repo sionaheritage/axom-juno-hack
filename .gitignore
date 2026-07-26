@@ -1,0 +1,10 @@
+__pycache__/
+.venv/
+.pytest_cache/
+yolov8n-pose.pt
+*.log
+*.pyc
+.env
+.env.*
+!.env.example
+*.jpeg

@@ -11,9 +11,9 @@ import socket
 
 import pytest
 
-from backend import config
-from backend.pose.control_link import JOINTS, PoseControlLink, to_control_frame
-from backend.pose.estimator import (
+from live_twin.backend import config
+from live_twin.backend.pose.control_link import JOINTS, PoseControlLink, to_control_frame
+from live_twin.backend.pose.estimator import (
     STATUS_ARM_NOT_VISIBLE,
     STATUS_NO_PERSON,
     STATUS_TRACKING,

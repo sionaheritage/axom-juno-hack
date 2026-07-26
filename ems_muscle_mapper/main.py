@@ -2,8 +2,10 @@ import logging
 import base64
 import hashlib
 from collections import OrderedDict
+from contextlib import asynccontextmanager
 from pathlib import Path
 from threading import Lock
+from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,31 +20,36 @@ from openai import (
     RateLimitError,
 )
 
-from services.arm_region import ArmNotFoundError, extract_arm_region
-from services.vlm_analyzer import (
+load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
+
+from ems_muscle_mapper.services.arm_region import ArmNotFoundError, extract_arm_region
+from ems_muscle_mapper.services.vlm_analyzer import (
     APIConfigurationError,
     UnsupportedImageError,
     analyze_muscle_movement,
     refine_muscle_movement,
 )
-from services.image_processor import build_alt_text, draw_ems_ui
-from services.image_normalizer import InvalidImageError, normalize_image_orientation
-from schemas import AccuracyFeedback, MuscleAnalysisResult
+from ems_muscle_mapper.services.image_processor import build_alt_text, draw_ems_ui
+from ems_muscle_mapper.services.image_normalizer import InvalidImageError, normalize_image_orientation
+from ems_muscle_mapper.schemas import AccuracyFeedback, MuscleAnalysisResult
+from live_twin.backend.main import app as live_twin_app
+from live_twin.backend.main import runtime as live_twin_runtime
 
 logger = logging.getLogger(__name__)
 SITE_ROOT = Path(__file__).resolve().parent.parent
 HERO_IMAGE = SITE_ROOT / "hero.jpeg"
 SITE_STATIC_DIR = SITE_ROOT / "static"
+SITE_TEMPLATE_DIR = SITE_ROOT / "templates"
 MAPPER_TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 mapper_app = FastAPI(title="EMS Muscle Mapper")
-mapper_app.mount("/static", StaticFiles(directory="templates"), name="static")
+mapper_app.mount("/static", StaticFiles(directory=MAPPER_TEMPLATE_DIR), name="static")
 mapper_app.mount(
     "/shared-static",
     StaticFiles(directory=SITE_STATIC_DIR),
     name="shared-static",
 )
-templates = Jinja2Templates(directory=MAPPER_TEMPLATE_DIR)
-site_templates = Jinja2Templates(directory=[SITE_ROOT, MAPPER_TEMPLATE_DIR])
+templates = Jinja2Templates(directory=[MAPPER_TEMPLATE_DIR, SITE_TEMPLATE_DIR])
+site_templates = Jinja2Templates(directory=[SITE_ROOT, SITE_TEMPLATE_DIR])
 
 _CACHE_MAX_PAIRS = 32
 _result_cache: OrderedDict[str, dict[str, object]] = OrderedDict()
@@ -315,7 +322,15 @@ async def refine_images(
         ) from exc
 
 
-app = FastAPI(title="EMS Muscle Tools")
+@asynccontextmanager
+async def _site_lifespan(_app: FastAPI):
+    try:
+        yield
+    finally:
+        await live_twin_runtime.shutdown()
+
+
+app = FastAPI(title="Axon", lifespan=_site_lifespan)
 app.mount("/static", StaticFiles(directory=SITE_STATIC_DIR), name="site-static")
 
 
@@ -332,3 +347,4 @@ async def hero_image():
 
 
 app.mount("/ems-muscle-mapper", mapper_app, name="ems-muscle-mapper")
+app.mount("/live-twin", live_twin_app, name="live-twin")

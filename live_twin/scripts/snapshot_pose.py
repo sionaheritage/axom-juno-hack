@@ -11,8 +11,8 @@ import cv2
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from backend.pose.estimator import ArmPoseEstimator
-from backend import config
+from live_twin.backend.pose.estimator import ArmPoseEstimator
+from live_twin.backend import config
 
 
 def main(out_prefix: str = "scratch"):

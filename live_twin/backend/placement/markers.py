@@ -12,7 +12,7 @@ specific reason rather than returning a low-confidence guess.
 import cv2
 import numpy as np
 
-from backend import config
+from live_twin.backend import config
 
 
 def detect_dots(image_bgr: np.ndarray) -> np.ndarray:

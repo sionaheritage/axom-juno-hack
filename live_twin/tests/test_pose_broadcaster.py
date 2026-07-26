@@ -1,4 +1,4 @@
-from backend.pose.broadcaster import PoseBroadcaster
+from live_twin.backend.pose.broadcaster import PoseBroadcaster
 
 
 def test_frame_subscription_keeps_only_the_latest_preview_frame():

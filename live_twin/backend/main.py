@@ -35,14 +35,18 @@ import asyncio
 import contextlib
 import json
 import logging
+from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
-from backend import config
-from backend.actuation.controller import ActuationController, ActuationError
-from backend.pose.broadcaster import PoseBroadcaster
-from backend.placement.pipeline import PlacementError, compute_placement
+from live_twin.backend import config
+from live_twin.backend.actuation.controller import ActuationController, ActuationError
+from live_twin.backend.pose.broadcaster import PoseBroadcaster
+from live_twin.backend.placement.pipeline import PlacementError, compute_placement
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("main")
@@ -50,33 +54,101 @@ logger = logging.getLogger("main")
 broadcaster = PoseBroadcaster()
 controller = ActuationController()
 
+LIVE_TWIN_ROOT = Path(__file__).resolve().parents[1]
+FRONTEND_DIR = LIVE_TWIN_ROOT / "frontend"
+SITE_TEMPLATE_DIR = LIVE_TWIN_ROOT.parent / "templates"
+templates = Jinja2Templates(directory=[FRONTEND_DIR, SITE_TEMPLATE_DIR])
 
-async def _lifespan(app: FastAPI):
-    await broadcaster.start()
+
+class LiveRuntime:
+    """Own the shared camera/model while at least one live client needs it."""
+
+    def __init__(
+        self,
+        pose_broadcaster: PoseBroadcaster,
+        actuation_controller: ActuationController,
+    ):
+        self.broadcaster = pose_broadcaster
+        self.controller = actuation_controller
+        self._active_clients = 0
+        self._lock = asyncio.Lock()
+
+    @property
+    def active_clients(self) -> int:
+        return self._active_clients
+
+    async def acquire(self) -> None:
+        async with self._lock:
+            if self._active_clients == 0:
+                try:
+                    await self.broadcaster.start()
+                except Exception:
+                    await self.broadcaster.stop()
+                    raise
+            self._active_clients += 1
+
+    async def release(self) -> None:
+        async with self._lock:
+            if self._active_clients == 0:
+                return
+            self._active_clients -= 1
+            if self._active_clients == 0:
+                await self.controller.stop()
+                await self.broadcaster.stop()
+
+    async def shutdown(self) -> None:
+        async with self._lock:
+            self._active_clients = 0
+            await self.controller.stop()
+            await self.broadcaster.stop()
+
+
+runtime = LiveRuntime(broadcaster, controller)
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
     try:
         yield
     finally:
-        await broadcaster.stop()
-        await controller.stop()
+        await runtime.shutdown()
 
 
-app = FastAPI(lifespan=_lifespan)
+app = FastAPI(title="Axon Live Twin", lifespan=_lifespan)
+app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
+
+
+@app.get("/")
+async def live_twin_home(request: Request):
+    """Render Live Twin beneath the shared Axon site header."""
+    return templates.TemplateResponse(request=request, name="twin.html")
 
 
 async def _mjpeg_stream():
-    async for jpeg in broadcaster.frames():
-        yield (
-            b"--frame\r\n"
-            b"Content-Type: image/jpeg\r\n"
-            + f"Content-Length: {len(jpeg)}\r\n\r\n".encode("ascii")
-            + jpeg
-            + b"\r\n"
-        )
+    try:
+        async for jpeg in broadcaster.frames():
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n"
+                + f"Content-Length: {len(jpeg)}\r\n\r\n".encode("ascii")
+                + jpeg
+                + b"\r\n"
+            )
+    finally:
+        await runtime.release()
 
 
 @app.get("/camera.mjpeg")
 async def camera_stream_endpoint():
     """Preview the broadcaster's camera without opening a second device handle."""
+    try:
+        await runtime.acquire()
+    except Exception as exc:
+        logger.exception("Live camera runtime could not start.")
+        raise HTTPException(
+            status_code=503,
+            detail="The live camera or pose model could not be started.",
+        ) from exc
     return StreamingResponse(
         _mjpeg_stream(),
         media_type="multipart/x-mixed-replace; boundary=frame",
@@ -143,20 +215,34 @@ async def _handle_client_messages(websocket: WebSocket):
 @app.websocket("/ws")
 async def ws_endpoint(websocket: WebSocket):
     await websocket.accept()
-    await websocket.send_text(json.dumps({"type": "ready", "armed": controller.armed}))
-
-    queue = broadcaster.subscribe()
-    forward_task = asyncio.create_task(_forward_pose(websocket, queue))
+    queue = None
+    forward_task = None
     try:
+        await runtime.acquire()
+        await websocket.send_text(json.dumps({"type": "ready", "armed": controller.armed}))
+        queue = broadcaster.subscribe()
+        forward_task = asyncio.create_task(_forward_pose(websocket, queue))
         await _handle_client_messages(websocket)
     except WebSocketDisconnect:
         pass
+    except Exception:
+        logger.exception("Live WebSocket runtime could not start.")
+        with contextlib.suppress(Exception):
+            await websocket.send_text(json.dumps({
+                "type": "status",
+                "pad": None,
+                "state": "error",
+                "detail": "The live camera or pose model could not be started.",
+            }))
+            await websocket.close(code=1011)
     finally:
-        broadcaster.unsubscribe(queue)
-        forward_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await forward_task
-        await controller.stop()
+        if queue is not None:
+            broadcaster.unsubscribe(queue)
+        if forward_task is not None:
+            forward_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await forward_task
+        await runtime.release()
 
 
 @app.post("/placement")

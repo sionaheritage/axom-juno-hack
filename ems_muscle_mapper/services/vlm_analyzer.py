@@ -5,7 +5,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from openai import OpenAI
-from schemas import MuscleAnalysisResult
+from ems_muscle_mapper.schemas import MuscleAnalysisResult
 
 # Load local development settings without depending on the process working directory.
 # The project-specific file intentionally overrides stale shell/user variables.

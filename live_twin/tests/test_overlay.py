@@ -3,7 +3,7 @@ import base64
 import cv2
 import numpy as np
 
-from backend.placement import overlay
+from live_twin.backend.placement import overlay
 
 
 def _blank(color=(120, 150, 180)) -> np.ndarray:

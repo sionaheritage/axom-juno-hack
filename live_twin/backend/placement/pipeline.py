@@ -30,10 +30,10 @@ response instead of turning into an all-or-nothing 422.
 import cv2
 import numpy as np
 
-from backend.pose.estimator import detect_pose_in_image
-from backend.placement.geometry import Point, wrist_pad_point, delt_pad_point
-from backend.placement import markers
-from backend.placement import overlay
+from live_twin.backend.pose.estimator import detect_pose_in_image
+from live_twin.backend.placement.geometry import Point, wrist_pad_point, delt_pad_point
+from live_twin.backend.placement import markers
+from live_twin.backend.placement import overlay
 
 
 class PlacementError(ValueError):

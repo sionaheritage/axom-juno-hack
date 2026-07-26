@@ -18,8 +18,8 @@ import asyncio
 import logging
 import time
 
-from backend import config
-from backend.driver.tens_client import TensClient, TensClientError
+from live_twin.backend import config
+from live_twin.backend.driver.tens_client import TensClient, TensClientError
 
 logger = logging.getLogger("actuation_controller")
 

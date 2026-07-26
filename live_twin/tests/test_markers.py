@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 import pytest
 
-from backend import config
-from backend.placement import markers
+from live_twin.backend import config
+from live_twin.backend.placement import markers
 
 
 def _dot_image(shape=(200, 200), dot_center=None, dot_radius=6):

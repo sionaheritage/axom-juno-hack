@@ -21,7 +21,7 @@ import logging
 import socket
 import time
 
-from backend import config
+from live_twin.backend import config
 
 logger = logging.getLogger("pose_control_link")
 

@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from backend.placement import hsv_calibration
+from live_twin.backend.placement import hsv_calibration
 
 
 def _solid_bgr_image(bgr_color, size=20):

@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from schemas import MuscleAnalysisResult
+from ems_muscle_mapper.schemas import MuscleAnalysisResult
 
 # 3c. OpenCV Render Engine
 

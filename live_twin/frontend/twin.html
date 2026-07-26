@@ -4,10 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#07100f">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>Motor Recovery — Live Arm Twin</title>
+  <link rel="stylesheet" href="/static/css/global.css">
+  <title>Live Twin — Axon</title>
   <style>
     /* Axon.
        One typeface, one accent, everything on an 8px rhythm. Hierarchy comes
@@ -19,27 +17,27 @@
     :root {
       color-scheme: dark;
 
-      --bg:        #0a0b0d;
-      --surface:   #131519;
-      --surface-2: #1a1d23;
-      --line:      #23272f;
+      --bg:        #07100f;
+      --surface:   #0b1917;
+      --surface-2: #0d211d;
+      --line:      rgba(162, 193, 181, 0.2);
 
-      --text:      #f5f6f7;
-      --text-2:    #9aa1ac;
-      --text-3:    #626873;
+      --text:      #f4f1e8;
+      --text-2:    #c8cec6;
+      --text-3:    #93a29b;
 
-      --accent:    #5ee9a4;   /* progress, live, confirmed */
-      --accent-dim: rgba(94, 233, 164, 0.12);
-      --warn:      #ffb454;
-      --warn-dim:  rgba(255, 180, 84, 0.12);
-      --stop:      #ff6b5a;
-      --stop-dim:  rgba(255, 107, 90, 0.12);
+      --accent:    #87f7c7;
+      --accent-dim: rgba(135, 247, 199, 0.13);
+      --warn:      #ffd65c;
+      --warn-dim:  rgba(255, 214, 92, 0.12);
+      --stop:      #ff8066;
+      --stop-dim:  rgba(255, 128, 102, 0.12);
 
-      --r-sm: 8px;
-      --r-md: 14px;
-      --r-lg: 20px;
+      --r-sm: 0;
+      --r-md: 0;
+      --r-lg: 0;
 
-      --sans: "Manrope", -apple-system, "Segoe UI", system-ui, sans-serif;
+      --sans: Bahnschrift, "Avenir Next Condensed", "Segoe UI", sans-serif;
 
       /* The built-in CSS easings are too weak to read as intentional. These
          are the stronger variants; ease-in is deliberately absent, because it
@@ -82,24 +80,13 @@
 
     /* ---------------------------------------------------------- header --- */
 
-    .topbar {
+    .session-toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 20px;
       min-width: 0;
     }
-
-    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-
-    .wordmark {
-      margin: 0;
-      font-size: 19px;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-    }
-
-    .brand-note { display: none; }
 
     .state-cluster { display: flex; align-items: center; gap: 8px; min-width: 0; }
 
@@ -496,15 +483,157 @@
       .choice:active, .side-option:active, .flow-primary:active, .flow-secondary:active,
       .choice:hover, .flow-primary:hover { transform: none !important; }
     }
+
+    /* Shared Axon site skin. The original Live Twin interaction model stays
+       intact while its chrome follows the landing page and Muscle Mapper. */
+    body.live-twin-page {
+      height: 100vh;
+      padding: var(--site-header-height) 0 0;
+      overflow: hidden;
+      background: transparent;
+      letter-spacing: 0.015em;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      height: calc(100vh - var(--site-header-height));
+      padding: clamp(12px, 1.6vw, 20px) clamp(14px, 2vw, 24px) 14px;
+    }
+
+    .session-toolbar {
+      min-height: 42px;
+      padding: 6px 8px 6px 12px;
+      border: 1px solid var(--line);
+      background: rgba(11, 25, 23, 0.9);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    }
+
+    .session-title {
+      color: var(--accent);
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .state-pill,
+    .side-option,
+    .tempo,
+    .flow-primary,
+    .choice {
+      border-radius: 0;
+    }
+
+    .state-pill,
+    .side-option,
+    .tempo {
+      border: 1px solid var(--line);
+      background: var(--field);
+    }
+
+    .state-dot,
+    .prompt-icon {
+      border-radius: 0;
+      transform: rotate(45deg);
+    }
+
+    .viewport,
+    .camera-viewport,
+    .flow {
+      border: 1px solid var(--line);
+      background-color: rgba(11, 25, 23, 0.92);
+      box-shadow: inset 0 0 40px rgba(135, 247, 199, 0.018);
+    }
+
+    .viewport {
+      background:
+        radial-gradient(110% 90% at 50% 0%, rgba(24, 59, 49, 0.7), #07100f 70%);
+    }
+
+    .corner {
+      position: absolute;
+      z-index: 4;
+      display: block;
+      width: 18px;
+      height: 18px;
+      pointer-events: none;
+    }
+    .corner.tl { top: 8px; left: 8px; border-top: 1px solid var(--accent); border-left: 1px solid var(--accent); }
+    .corner.tr { top: 8px; right: 8px; border-top: 1px solid var(--accent); border-right: 1px solid var(--accent); }
+    .corner.br { right: 8px; bottom: 8px; border-right: 1px solid var(--accent); border-bottom: 1px solid var(--accent); }
+    .corner.bl { bottom: 8px; left: 8px; border-bottom: 1px solid var(--accent); border-left: 1px solid var(--accent); }
+
+    .panel-tag {
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      z-index: 5;
+      display: block;
+      color: var(--accent);
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .prompt {
+      border: 1px solid rgba(135, 247, 199, 0.3);
+      background: rgba(7, 16, 15, 0.95);
+    }
+
+    .steps li { border-radius: 0; }
+    .choice { border: 1px solid var(--line); }
+    .choice:hover { background: var(--field); }
+    .choice.is-selected { border-color: rgba(135, 247, 199, 0.5); }
+    .flow-primary { border: 1px solid var(--accent); }
+    .flow-primary:focus-visible,
+    .choice:focus-visible,
+    .side-option:focus-visible {
+      outline-color: var(--accent);
+    }
+
+    .footerbar {
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      letter-spacing: 0.015em;
+    }
+
+    @media (max-width: 820px) {
+      body.live-twin-page {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+      }
+      .shell {
+        height: auto;
+        min-height: calc(100vh - var(--site-header-height));
+      }
+      .session-toolbar,
+      .session-toolbar > .state-cluster {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .session-toolbar > .state-cluster {
+        width: 100%;
+      }
+      .audio-controls {
+        flex-wrap: wrap;
+      }
+      .stage {
+        min-height: 680px;
+      }
+    }
   </style>
 </head>
-<body>
+<body class="live-twin-page site-with-header">
+  {% from "partials/site_header.html" import site_header %}
+  {{ site_header("live-twin") }}
   <main class="shell">
-    <header class="topbar">
-      <div class="brand">
-        <h1 class="wordmark">Axon</h1>
-        <span class="brand-note">Motor recovery</span>
-      </div>
+    <section class="session-toolbar" aria-label="Live Twin session controls">
+      <span class="session-title">Live Twin / Session</span>
 
       <div class="state-cluster">
         <div class="audio-controls" role="group" aria-label="Audio coaching">
@@ -532,7 +661,7 @@
           </span>
         </div>
       </div>
-    </header>
+    </section>
 
     <div class="stage">
       <section class="viewport" id="viewport" aria-label="Anatomical arm model">
@@ -585,7 +714,7 @@
         <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noreferrer">
           BodyParts3D © The Database Center for Life Science
         </a>
-        — per-asset licence in <code>frontend/assets/THIRD_PARTY_ASSETS.md</code>
+        — per-asset licence in <a href="assets/THIRD_PARTY_ASSETS.md">THIRD_PARTY_ASSETS.md</a>
       </p>
       <p id="endpoint">WS /ws</p>
     </footer>
@@ -755,15 +884,13 @@
       if (wsOverride) {
         const url = new URL(wsOverride, window.location.href);
         url.protocol = url.protocol === "wss:" ? "https:" : "http:";
-        url.pathname = "/camera.mjpeg";
+        url.pathname = url.pathname.replace(/\/ws\/?$/, "/camera.mjpeg");
         url.search = "";
         url.hash = "";
         return url.toString();
       }
 
-      const scheme = window.location.protocol === "https:" ? "https" : "http";
-      const host = window.location.hostname || "127.0.0.1";
-      return `${scheme}://${host}:8000/camera.mjpeg`;
+      return new URL("camera.mjpeg", window.location.href).toString();
     }
 
     const cameraUrl = cameraStreamUrl();
@@ -2704,21 +2831,10 @@
 
     function websocketUrl() {
       const override = new URLSearchParams(window.location.search).get("ws");
-      if (override) return override;
-
-      const secure = window.location.protocol === "https:";
-      const scheme = secure ? "wss" : "ws";
-      if (window.location.protocol === "file:") {
-        return "ws://127.0.0.1:8000/ws";
-      }
-
-      // The repo does not serve frontend/ itself. When twin.html is opened from a
-      // local static server, default to FastAPI's normal port rather than that server.
-      const host = window.location.hostname || "127.0.0.1";
-      const port = window.location.port && window.location.port !== "8000"
-        ? "8000"
-        : window.location.port;
-      return `${scheme}://${host}${port ? `:${port}` : ""}/ws`;
+      const url = new URL(override || "ws", window.location.href);
+      if (url.protocol === "https:") url.protocol = "wss:";
+      if (url.protocol === "http:") url.protocol = "ws:";
+      return url.toString();
     }
 
     const wsUrl = websocketUrl();

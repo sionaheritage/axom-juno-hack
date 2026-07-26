@@ -1,5 +1,5 @@
-from backend.placement.geometry import Point, wrist_pad_point, delt_pad_point
-from backend import config
+from live_twin.backend.placement.geometry import Point, wrist_pad_point, delt_pad_point
+from live_twin.backend import config
 
 
 def test_wrist_pad_point_is_between_wrist_and_elbow():

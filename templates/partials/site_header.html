@@ -16,8 +16,11 @@
                 {% if active_product == 'muscle-mapper' %}aria-current="page"{% endif %}>
                 Muscle Mapper
             </a>
-            <button class="product-tab product-tab--placeholder" type="button" disabled
-                aria-label="Future Axon product"></button>
+            <a class="product-tab{% if active_product == 'live-twin' %} is-active{% endif %}"
+                href="/live-twin/"
+                {% if active_product == 'live-twin' %}aria-current="page"{% endif %}>
+                Live Twin
+            </a>
             <button class="product-tab product-tab--placeholder" type="button" disabled
                 aria-label="Future Axon product"></button>
         </nav>

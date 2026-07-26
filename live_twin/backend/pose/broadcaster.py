@@ -16,9 +16,9 @@ import time
 
 import cv2
 
-from backend import config
-from backend.pose.control_link import PoseControlLink
-from backend.pose.estimator import ArmPoseEstimator, validate_side
+from live_twin.backend import config
+from live_twin.backend.pose.control_link import PoseControlLink
+from live_twin.backend.pose.estimator import ArmPoseEstimator, validate_side
 
 logger = logging.getLogger("pose_broadcaster")
 

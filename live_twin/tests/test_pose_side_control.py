@@ -7,9 +7,9 @@ actually encodes the product decisions is _pick_side/read(), not MediaPipe.
 """
 import pytest
 
-from backend import config
-from backend.pose import estimator as estimator_module
-from backend.pose.estimator import (
+from live_twin.backend import config
+from live_twin.backend.pose import estimator as estimator_module
+from live_twin.backend.pose.estimator import (
     LEFT_INDICES,
     RIGHT_INDICES,
     SIDE_LEFT,
@@ -20,7 +20,7 @@ from backend.pose.estimator import (
     ArmPoseEstimator,
     validate_side,
 )
-from backend.pose.broadcaster import PoseBroadcaster
+from live_twin.backend.pose.broadcaster import PoseBroadcaster
 
 
 class _FakeLandmark:

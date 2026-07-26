@@ -18,7 +18,7 @@ import cv2
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from backend.placement.hsv_calibration import suggest_hsv_range, DEFAULT_TOLERANCE
+from live_twin.backend.placement.hsv_calibration import suggest_hsv_range, DEFAULT_TOLERANCE
 
 
 def main(image_path: str, x: int, y: int, tolerance: tuple = DEFAULT_TOLERANCE):

@@ -12,7 +12,7 @@ import cv2
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from backend import config
+from live_twin.backend import config
 
 
 def main(out_path: str):

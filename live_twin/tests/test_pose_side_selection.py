@@ -3,8 +3,8 @@ Tests the side-locking logic in backend/pose/estimator.py directly against
 fake landmark data, so this doesn't need the downloaded MediaPipe model file
 or a real camera to run.
 """
-from backend import config
-from backend.pose.estimator import (
+from live_twin.backend import config
+from live_twin.backend.pose.estimator import (
     LEFT_INDICES,
     RIGHT_INDICES,
     SIDE_LEFT,

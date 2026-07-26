@@ -15,7 +15,7 @@ import json
 import socket
 import logging
 
-from backend import config
+from live_twin.backend import config
 
 logger = logging.getLogger("tens_client")
 

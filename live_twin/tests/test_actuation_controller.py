@@ -3,9 +3,9 @@ import time
 
 import pytest
 
-from backend.actuation.controller import ActuationController, ActuationError
-from backend.driver.tens_client import TensClientError
-from backend import config
+from live_twin.backend.actuation.controller import ActuationController, ActuationError
+from live_twin.backend.driver.tens_client import TensClientError
+from live_twin.backend import config
 
 
 class _FakeDriver:

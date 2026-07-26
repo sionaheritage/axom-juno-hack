@@ -6,7 +6,7 @@ they're actually read from the environment, like BOARD_HOST already is.
 """
 import importlib
 
-from backend import config
+from live_twin.backend import config
 
 
 def _reload():

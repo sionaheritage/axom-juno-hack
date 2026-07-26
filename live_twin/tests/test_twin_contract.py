@@ -3,7 +3,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 
-TWIN_HTML = Path("frontend/twin.html").read_text(encoding="utf-8")
+LIVE_TWIN_FRONTEND = Path(__file__).resolve().parents[1] / "frontend"
+TWIN_HTML = (LIVE_TWIN_FRONTEND / "twin.html").read_text(encoding="utf-8")
 
 
 class _ViewportTextParser(HTMLParser):
@@ -85,6 +86,26 @@ def test_camera_preview_uses_backend_stream_not_a_second_browser_camera():
         assert "video" not in call, f"browser is opening a second camera: getUserMedia({{{call}}})"
 
 
+def test_live_urls_respect_the_mounted_base_and_keep_overrides():
+    assert 'new URL("camera.mjpeg", window.location.href)' in TWIN_HTML
+    assert 'new URL(override || "ws", window.location.href)' in TWIN_HTML
+    assert 'params.get("camera")' in TWIN_HTML
+    assert 'params.get("ws")' in TWIN_HTML
+    assert 'replace(/\\/ws\\/?$/, "/camera.mjpeg")' in TWIN_HTML
+    assert ":8000/camera.mjpeg" not in TWIN_HTML
+    assert "127.0.0.1:8000/ws" not in TWIN_HTML
+
+
+def test_live_twin_uses_shared_header_and_axon_skin():
+    assert 'href="/static/css/global.css"' in TWIN_HTML
+    assert '{{ site_header("live-twin") }}' in TWIN_HTML
+    assert 'class="session-toolbar"' in TWIN_HTML
+    assert 'class="topbar"' not in TWIN_HTML
+    assert 'class="wordmark"' not in TWIN_HTML
+    assert "--accent:    #87f7c7" in TWIN_HTML
+    assert "--r-lg: 0" in TWIN_HTML
+
+
 def _manifest_ids_by_side() -> dict[str, dict[str, list[str]]]:
     """
     Pull MUSCLE_ASSET_MANIFEST out of twin.html without a JS engine: grab the
@@ -123,7 +144,7 @@ def test_every_manifest_mesh_file_actually_exists():
         for side, targets in sides.items()
         for target, ids in targets.items()
         for mesh_id in ids
-        if not Path(f"frontend/assets/bp3d/{mesh_id}.obj").is_file()
+        if not (LIVE_TWIN_FRONTEND / "assets" / "bp3d" / f"{mesh_id}.obj").is_file()
     ]
     assert missing == [], f"manifest references missing mesh files: {missing}"
 

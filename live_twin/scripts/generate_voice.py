@@ -30,7 +30,7 @@ from pathlib import Path
 # change character between runs.
 VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
 MODEL_ID = "eleven_flash_v2_5"   # lowest latency; these are short utterances
-OUTPUT_DIR = Path("frontend/assets/voice")
+OUTPUT_DIR = Path(__file__).resolve().parents[1] / "frontend" / "assets" / "voice"
 
 # key -> spoken text. Keys are what the frontend asks for, so renaming one is a
 # code change on both sides; changing the *text* is just a re-render.

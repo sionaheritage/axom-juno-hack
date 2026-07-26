@@ -26,11 +26,12 @@ Needs a downloaded model file — see scripts/download_pose_model.py.
 """
 import time
 from dataclasses import dataclass
+from pathlib import Path
 
 import mediapipe as mp
 from mediapipe.tasks.python import vision
 
-from backend import config
+from live_twin.backend import config
 
 SIDE_LEFT = "left"
 SIDE_RIGHT = "right"
@@ -55,7 +56,9 @@ STATUS_TRACKING = "tracking"
 STATUS_NO_PERSON = "no_person"
 STATUS_ARM_NOT_VISIBLE = "arm_not_visible"
 
-DEFAULT_MODEL_PATH = "models/pose_landmarker_lite.task"
+DEFAULT_MODEL_PATH = str(
+    Path(__file__).resolve().parents[2] / "models" / "pose_landmarker_lite.task"
+)
 
 
 @dataclass(frozen=True)

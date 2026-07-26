@@ -8,8 +8,8 @@ import base64
 import cv2
 import numpy as np
 
-from backend.placement import pipeline
-from backend.pose.estimator import SIDE_LEFT
+from live_twin.backend.placement import pipeline
+from live_twin.backend.pose.estimator import SIDE_LEFT
 
 
 def _encode(image_bgr: np.ndarray) -> bytes:
@@ -142,7 +142,7 @@ def test_compute_placement_raises_placement_error_on_undecodable_image():
     good = _encode(_dot_image((100, 100)))
 
     import pytest
-    from backend.placement.pipeline import PlacementError
+    from live_twin.backend.placement.pipeline import PlacementError
 
     with pytest.raises(PlacementError, match="could not decode"):
         pipeline.compute_placement(

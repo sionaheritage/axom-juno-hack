@@ -128,7 +128,7 @@ opening a second handle to the camera.
 ## 3. Running it
 
 ```bash
-POSE_UDP_ENABLED=true POSE_UDP_HOST=<your-host> uv run uvicorn backend.main:app --host 127.0.0.1 --port 8000
+POSE_UDP_ENABLED=true POSE_UDP_HOST=<your-host> uv run uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
 It's off by default because enabling it starts sending pose to whatever is

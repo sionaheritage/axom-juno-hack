@@ -4,8 +4,8 @@ import threading
 
 import pytest
 
-from backend.driver.tens_client import TensClient, TensClientError
-from backend import config
+from live_twin.backend.driver.tens_client import TensClient, TensClientError
+from live_twin.backend import config
 
 
 def test_mock_fire_returns_ok_without_a_real_socket():

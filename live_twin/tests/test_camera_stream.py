@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from backend import main
+from live_twin.backend import main
 
 
 def test_camera_stream_wraps_shared_broadcaster_frames_as_mjpeg(monkeypatch):
@@ -9,7 +9,13 @@ def test_camera_stream_wraps_shared_broadcaster_frames_as_mjpeg(monkeypatch):
     async def one_frame():
         yield jpeg
 
+    async def noop():
+        return None
+
     monkeypatch.setattr(main.broadcaster, "frames", one_frame)
+    monkeypatch.setattr(main.runtime, "acquire", noop)
+    monkeypatch.setattr(main.runtime, "release", noop)
+    monkeypatch.setattr(main.runtime, "shutdown", noop)
 
     response = TestClient(main.app).get("/camera.mjpeg")
 

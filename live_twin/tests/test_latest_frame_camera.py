@@ -11,7 +11,7 @@ import time
 
 import pytest
 
-from backend.pose.broadcaster import LatestFrameCamera
+from live_twin.backend.pose.broadcaster import LatestFrameCamera
 
 
 class _FakeCapture:
