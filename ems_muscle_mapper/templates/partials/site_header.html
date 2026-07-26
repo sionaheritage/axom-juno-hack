@@ -1,0 +1,26 @@
+{% from "partials/electric_rail.html" import electric_rail %}
+
+{% macro site_header(active_product="") -%}
+<header class="site-header">
+    {{ electric_rail("top") }}
+
+    <div class="site-header__inner">
+        <a class="site-header__brand" href="/" aria-label="Axon home">
+            <span class="site-header__brand-mark" aria-hidden="true"></span>
+            <span>Axon</span>
+        </a>
+
+        <nav class="product-tabs" aria-label="Axon products">
+            <a class="product-tab{% if active_product == 'muscle-mapper' %} is-active{% endif %}"
+                href="/ems-muscle-mapper/"
+                {% if active_product == 'muscle-mapper' %}aria-current="page"{% endif %}>
+                Muscle Mapper
+            </a>
+            <button class="product-tab product-tab--placeholder" type="button" disabled
+                aria-label="Future Axon product"></button>
+            <button class="product-tab product-tab--placeholder" type="button" disabled
+                aria-label="Future Axon product"></button>
+        </nav>
+    </div>
+</header>
+{%- endmacro %}

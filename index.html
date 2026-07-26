@@ -1,24 +1,19 @@
 <!DOCTYPE html>
+{% from "partials/electric_rail.html" import electric_rail %}
+{% from "partials/site_header.html" import site_header %}
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EMS Muscle Tools</title>
+    <meta name="description" content="AXON — your digital electric neurotransmitter.">
+    <title>AXON — Digital Electric Neurotransmitter</title>
     <link rel="stylesheet" href="/static/css/global.css">
+    <link rel="stylesheet" href="/static/css/landing.css">
 </head>
 
-<body class="landing-page">
-    <div class="electric-rail electric-rail--top" aria-hidden="true">
-        <svg viewBox="0 0 1200 42" preserveAspectRatio="none">
-            <path class="electric-rail__trace"
-                d="M0 29 L86 29 L98 20 L108 35 L122 13 L135 29 L278 29 L291 22 L300 33 L314 17 L328 29 L518 29 L530 14 L543 35 L558 21 L570 29 L746 29 L760 18 L772 34 L787 12 L803 29 L963 29 L978 22 L990 33 L1005 16 L1020 29 L1200 29" />
-            <path class="electric-rail__pulse"
-                d="M0 29 L86 29 L98 20 L108 35 L122 13 L135 29 L278 29 L291 22 L300 33 L314 17 L328 29 L518 29 L530 14 L543 35 L558 21 L570 29 L746 29 L760 18 L772 34 L787 12 L803 29 L963 29 L978 22 L990 33 L1005 16 L1020 29 L1200 29" />
-            <path class="electric-rail__pulse electric-rail__pulse--echo"
-                d="M0 29 L86 29 L98 20 L108 35 L122 13 L135 29 L278 29 L291 22 L300 33 L314 17 L328 29 L518 29 L530 14 L543 35 L558 21 L570 29 L746 29 L760 18 L772 34 L787 12 L803 29 L963 29 L978 22 L990 33 L1005 16 L1020 29 L1200 29" />
-        </svg>
-    </div>
+<body class="landing-page site-with-header">
+    {{ site_header() }}
 
     <div class="signal-field" id="signalField" aria-hidden="true">
         <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">
@@ -75,29 +70,76 @@
         </svg>
     </div>
 
-    <div class="hand-ticker" aria-hidden="true"></div>
+    <main class="landing-hero">
+        <section class="hero-copy" aria-labelledby="heroTitle">
+            <p class="hero-kicker text-enter enter-2">
+                <span aria-hidden="true"></span>
+                Digital signal. Human response.
+            </p>
+            <h1 class="hero-title text-enter enter-3" id="heroTitle">
+                <span class="hero-title__phrase hero-title__phrase--left">From thought</span>
+                <span class="hero-title__hand" aria-hidden="true">
+                    <img src="/static/images/hand-hero.png" alt="">
+                </span>
+                <span class="hero-title__phrase hero-title__phrase--right hero-title__accent">To motion.</span>
+            </h1>
+            <p class="hero-caption text-enter enter-4">
+                AXON is your digital electric neurotransmitter — intelligent muscle mapping designed to make every
+                signal more precise.
+            </p>
+            <div class="hero-actions text-enter enter-5">
+                <button class="site-button hero-cta" type="button" title="Interest registration is coming soon">
+                    Register interest
+                    <span aria-hidden="true">↗</span>
+                </button>
+                <a class="hero-text-link" href="/ems-muscle-mapper/">
+                    Explore the mapper
+                    <span aria-hidden="true">→</span>
+                </a>
+            </div>
+        </section>
 
-    <main class="card">
-        <header class="app-intro">
-            <p class="eyebrow text-enter enter-1">Biomechanical analysis // EMS placement</p>
-            <h1 class="text-enter enter-2">EMS Muscle Tools</h1>
-            <p class="text-enter enter-3">This landing page sits outside the EMS Muscle Mapper application.</p>
-        </header>
-        <a class="site-button text-enter enter-4" href="/ems-muscle-mapper/">Test EMS Muscle Mapper</a>
+        <figure class="hero-media" aria-label="AXON electronics prototype">
+            <div class="hero-media__frame">
+                <img class="hero-image hero-image--base" src="/hero.jpeg"
+                    alt="AXON electronics prototype assembled with relay boards, microcontrollers and breadboards">
+                <img class="hero-image hero-image--distortion hero-image--distortion-a" src="/hero.jpeg" alt=""
+                    aria-hidden="true">
+                <img class="hero-image hero-image--distortion hero-image--distortion-b" src="/hero.jpeg" alt=""
+                    aria-hidden="true">
+                <span class="hero-media__scan" aria-hidden="true"></span>
+            </div>
+        </figure>
+
+        <a class="hero-scroll text-enter enter-5" href="#approach">
+            <span aria-hidden="true"></span>
+            Scroll to explore
+        </a>
     </main>
 
-    <div class="electric-rail" aria-hidden="true">
-        <svg viewBox="0 0 1200 42" preserveAspectRatio="none">
-            <path class="electric-rail__trace"
-                d="M0 29 L86 29 L98 20 L108 35 L122 13 L135 29 L278 29 L291 22 L300 33 L314 17 L328 29 L518 29 L530 14 L543 35 L558 21 L570 29 L746 29 L760 18 L772 34 L787 12 L803 29 L963 29 L978 22 L990 33 L1005 16 L1020 29 L1200 29" />
-            <path class="electric-rail__pulse"
-                d="M0 29 L86 29 L98 20 L108 35 L122 13 L135 29 L278 29 L291 22 L300 33 L314 17 L328 29 L518 29 L530 14 L543 35 L558 21 L570 29 L746 29 L760 18 L772 34 L787 12 L803 29 L963 29 L978 22 L990 33 L1005 16 L1020 29 L1200 29" />
-            <path class="electric-rail__pulse electric-rail__pulse--echo"
-                d="M0 29 L86 29 L98 20 L108 35 L122 13 L135 29 L278 29 L291 22 L300 33 L314 17 L328 29 L518 29 L530 14 L543 35 L558 21 L570 29 L746 29 L760 18 L772 34 L787 12 L803 29 L963 29 L978 22 L990 33 L1005 16 L1020 29 L1200 29" />
-        </svg>
-    </div>
+    <section class="possibilities-section" id="approach" aria-labelledby="possibilitiesTitle">
+        <div class="possibilities-copy scroll-reveal">
+            <p class="eyebrow">From signal to movement</p>
+            <h2 id="possibilitiesTitle">A clearer connection between intent and response.</h2>
+            <p>AXON brings digital intelligence and electrical stimulation into one evolving platform.</p>
+        </div>
+
+        <div class="placeholder-grid" aria-label="Upcoming AXON capabilities">
+            <article class="placeholder-card scroll-reveal" aria-label="Upcoming capability placeholder one"></article>
+            <article class="placeholder-card scroll-reveal" aria-label="Upcoming capability placeholder two"></article>
+            <article class="placeholder-card scroll-reveal" aria-label="Upcoming capability placeholder three">
+            </article>
+        </div>
+
+        <a class="site-button begin-cta scroll-reveal" href="/ems-muscle-mapper/">
+            Begin Using AXON
+        </a>
+    </section>
+
+    {{ electric_rail() }}
 
     <script src="/static/js/background.js" defer></script>
+    <script src="/static/js/landing.js" defer></script>
 </body>
 
 </html>

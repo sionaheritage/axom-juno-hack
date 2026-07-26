@@ -46,7 +46,7 @@ class APIIntegrationTests(unittest.TestCase):
         ):
             os.environ.pop("OPENAI_API_KEY", None)
             response = TestClient(main.app).post(
-                "/analyze",
+                "/ems-muscle-mapper/analyze",
                 files={
                     "lax_image": ("lax.jpg", JPEG_BYTES, "image/jpeg"),
                     "flexed_image": ("flexed.jpg", JPEG_BYTES, "image/jpeg"),
@@ -96,7 +96,7 @@ class APIIntegrationTests(unittest.TestCase):
             patch.object(main, "draw_ems_ui", return_value=b"annotated-jpeg"),
         ):
             response = TestClient(main.app).post(
-                "/analyze",
+                "/ems-muscle-mapper/analyze",
                 files={
                     "lax_image": ("lax.jpg", JPEG_BYTES, "image/jpeg"),
                     "flexed_image": ("flexed.jpg", JPEG_BYTES, "image/jpeg"),
@@ -219,15 +219,68 @@ class APIIntegrationTests(unittest.TestCase):
 
     def test_feedback_endpoint_accepts_mapping_rating(self):
         response = TestClient(main.app).post(
-            "/feedback",
+            "/ems-muscle-mapper/feedback",
             json={"analysis_id": "a" * 64, "accurate": True},
         )
 
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json(), {"status": "received"})
 
-    def test_home_includes_accuracy_and_correction_controls(self):
-        response = TestClient(main.app).get("/")
+    def test_landing_page_renders_axon_hero_without_interest_backend(self):
+        client = TestClient(main.app)
+        response = client.get("/")
+        hero = client.get("/hero.jpeg")
+        landing_css = client.get("/static/css/landing.css")
+        landing_js = client.get("/static/js/landing.js")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(hero.status_code, 200)
+        self.assertEqual(landing_css.status_code, 200)
+        self.assertEqual(landing_js.status_code, 200)
+        self.assertEqual(hero.headers["content-type"], "image/jpeg")
+        self.assertIn('class="hero-title__x">X</span>', response.text)
+        self.assertIn("Rewiring movement", response.text)
+        self.assertIn("from home.", response.text)
+        self.assertIn('class="hero-nav', response.text)
+        self.assertIn('class="hero-title__accent"', response.text)
+        self.assertIn("Digital signal. Human response.", response.text)
+        self.assertIn("Register interest", response.text)
+        self.assertIn('class="hero-actions', response.text)
+        self.assertIn('class="site-button hero-cta"', response.text)
+        self.assertIn('type="button"', response.text)
+        self.assertIn("Explore the mapper", response.text)
+        self.assertIn("Begin Using AXON", response.text)
+        self.assertIn('href="/ems-muscle-mapper/"', response.text)
+        self.assertEqual(response.text.count('class="placeholder-card'), 3)
+        self.assertIn('src="/hero.jpeg"', response.text)
+        self.assertIn('href="/static/css/landing.css"', response.text)
+        self.assertIn('href="/static/css/global.css"', response.text)
+        self.assertIn('src="/static/js/background.js"', response.text)
+        self.assertIn('src="/static/js/landing.js"', response.text)
+        self.assertIn('id="signalField"', response.text)
+        self.assertIn("@keyframes hero-glitch-a", landing_css.text)
+        self.assertIn("@keyframes hero-scan", landing_css.text)
+        self.assertIn("@keyframes hero-text-float-in", landing_css.text)
+        self.assertIn("@keyframes hero-visual-reveal", landing_css.text)
+        self.assertIn("@keyframes hero-scroll-line", landing_css.text)
+        self.assertIn('"Arial Black"', landing_css.text)
+        self.assertIn("font-size: clamp(3.25rem, 7.2vw, 6.9rem)", landing_css.text)
+        self.assertIn(".hero-title__x", landing_css.text)
+        self.assertIn(".hero-nav__links", landing_css.text)
+        self.assertIn("IntersectionObserver", landing_js.text)
+        self.assertIn("scroll-reveal", landing_js.text)
+        self.assertIn("position: fixed", landing_css.text)
+        self.assertIn("opacity: 0.5", landing_css.text)
+        self.assertIn("mask-image: linear-gradient", landing_css.text)
+        self.assertNotIn("@keyframes hero-float", landing_css.text)
+        self.assertNotIn("@keyframes hero-image-drift", landing_css.text)
+        self.assertIn(
+            "@media (prefers-reduced-motion: reduce)",
+            landing_css.text,
+        )
+
+    def test_mapper_home_includes_accuracy_and_correction_controls(self):
+        response = TestClient(main.app).get("/ems-muscle-mapper/")
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('id="accuracyQuestion"', response.text)
@@ -249,8 +302,6 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertIn('class="loading-bolt"', response.text)
         self.assertIn('class="loading-bolt__pulse"', response.text)
         self.assertIn('id="changeImagesButton"', response.text)
-        self.assertIn('class="frame-label"', response.text)
-        self.assertIn("Analysed output", response.text)
         self.assertIn('class="electric-rail"', response.text)
         self.assertIn('class="electric-rail electric-rail--top"', response.text)
         self.assertIn('class="electric-rail__pulse"', response.text)
@@ -261,10 +312,23 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertIn('signal-field__fibres--cross', response.text)
         self.assertIn('signal-field__fibres--arcs', response.text)
         self.assertIn('class="hand-ticker" aria-hidden="true"', response.text)
+        self.assertIn('href="/static/css/global.css"', response.text)
+        self.assertIn('src="/static/js/background.js"', response.text)
 
     def test_styles_include_neon_palette_and_wide_split_layout(self):
-        response = TestClient(main.app).get("/static/css/style.css")
+        client = TestClient(main.app)
+        global_response = client.get("/static/css/global.css")
+        mapper_response = client.get(
+            "/ems-muscle-mapper/static/css/style.css"
+        )
+        response = SimpleNamespace(
+            status_code=mapper_response.status_code,
+            text=(
+                global_response.text + "\n" + mapper_response.text
+            ).replace("\r\n", "\n"),
+        )
 
+        self.assertEqual(global_response.status_code, 200)
         self.assertEqual(response.status_code, 200)
         self.assertIn("--signal: #87f7c7", response.text)
         self.assertIn("@media (min-width: 1100px)", response.text)
@@ -324,7 +388,7 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertIn("@keyframes loading-ellipsis", response.text)
         self.assertIn("@keyframes loading-electricity", response.text)
         self.assertIn(".loading-bolt__pulse--echo", response.text)
-        self.assertIn('url("/static/images/hands1.png")', response.text)
+        self.assertIn('url("../images/hands1.png")', response.text)
         self.assertIn("background-repeat: repeat-y", response.text)
         self.assertIn("background-size: 322px 699px", response.text)
         self.assertIn("opacity: 0.22", response.text)
@@ -336,8 +400,17 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertIn("@media (max-width: 640px)", response.text)
 
     def test_frontend_resets_result_and_restores_uploads(self):
-        response = TestClient(main.app).get("/static/js/app.js")
+        client = TestClient(main.app)
+        background_response = client.get("/static/js/background.js")
+        mapper_response = client.get(
+            "/ems-muscle-mapper/static/js/app.js"
+        )
+        response = SimpleNamespace(
+            status_code=mapper_response.status_code,
+            text=background_response.text + "\n" + mapper_response.text,
+        )
 
+        self.assertEqual(background_response.status_code, 200)
         self.assertEqual(response.status_code, 200)
         self.assertIn("function clearResult()", response.text)
         self.assertIn("changeImagesButton.addEventListener('click'", response.text)
@@ -356,6 +429,23 @@ class APIIntegrationTests(unittest.TestCase):
         self.assertIn("recenterSignalField", response.text)
         self.assertIn("function syncUploadContact(input)", response.text)
         self.assertIn("classList.toggle('has-file'", response.text)
+        self.assertIn("fetch('analyze'", response.text)
+        self.assertIn("fetch('feedback'", response.text)
+        self.assertIn("fetch('refine'", response.text)
+
+    def test_global_background_image_is_served_from_site_static(self):
+        client = TestClient(main.app)
+
+        self.assertEqual(
+            client.get("/static/images/hands1.png").status_code,
+            200,
+        )
+        self.assertEqual(
+            client.get(
+                "/ems-muscle-mapper/static/images/hands1.png"
+            ).status_code,
+            404,
+        )
 
     def test_refine_returns_new_rendered_mapping(self):
         analysis = MuscleAnalysisResult.model_validate(
@@ -400,7 +490,7 @@ class APIIntegrationTests(unittest.TestCase):
             patch.object(main, "draw_ems_ui", return_value=b"revised-jpeg"),
         ):
             response = TestClient(main.app).post(
-                "/refine",
+                "/ems-muscle-mapper/refine",
                 files={
                     "lax_image": ("lax.jpg", JPEG_BYTES, "image/jpeg"),
                     "flexed_image": ("flexed.png", PNG_BYTES, "image/png"),
@@ -433,7 +523,7 @@ class APIIntegrationTests(unittest.TestCase):
             patch.object(main, "refine_muscle_movement") as refine,
         ):
             response = TestClient(main.app).post(
-                "/refine",
+                "/ems-muscle-mapper/refine",
                 files={
                     "lax_image": ("lax.jpg", JPEG_BYTES, "image/jpeg"),
                     "flexed_image": ("flexed.png", PNG_BYTES, "image/png"),
@@ -483,8 +573,8 @@ class APIIntegrationTests(unittest.TestCase):
                 "lax_image": ("lax.jpg", JPEG_BYTES, "image/jpeg"),
                 "flexed_image": ("flexed.jpg", PNG_BYTES, "image/png"),
             }
-            first = client.post("/analyze", files=files)
-            second = client.post("/analyze", files=files)
+            first = client.post("/ems-muscle-mapper/analyze", files=files)
+            second = client.post("/ems-muscle-mapper/analyze", files=files)
 
         self.assertEqual(first.status_code, 200)
         self.assertEqual(second.status_code, 200)

@@ -773,7 +773,10 @@ body.lightbox-open {
         display: grid;
         align-items: start;
         height: 100dvh;
-        padding: clamp(0.75rem, 2vh, 1.5rem) clamp(1.5rem, 3vw, 3rem);
+        padding:
+            calc(var(--site-header-height) + clamp(0.75rem, 2vh, 1.5rem))
+            clamp(1.5rem, 3vw, 3rem)
+            clamp(0.75rem, 2vh, 1.5rem);
         overflow: hidden;
     }
 
@@ -787,7 +790,7 @@ body.lightbox-open {
             "details visual";
         grid-template-rows: auto auto auto minmax(0, 1fr);
         width: min(100%, 1440px);
-        height: calc(100dvh - clamp(1.5rem, 4vh, 3rem));
+        height: calc(100dvh - var(--site-header-height) - clamp(1.5rem, 4vh, 3rem));
         min-height: 0;
         padding: clamp(1.25rem, 2.6vw, 2.5rem);
         overflow: hidden;
@@ -912,7 +915,7 @@ body.lightbox-open {
 
 @media (max-width: 640px) {
     body {
-        padding: 0;
+        padding: var(--site-header-height) 0 0;
     }
 
     .card {

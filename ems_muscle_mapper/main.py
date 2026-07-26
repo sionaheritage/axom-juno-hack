@@ -31,11 +31,18 @@ from schemas import AccuracyFeedback, MuscleAnalysisResult
 
 logger = logging.getLogger(__name__)
 SITE_ROOT = Path(__file__).resolve().parent.parent
-LANDING_PAGE = SITE_ROOT / "index.html"
+HERO_IMAGE = SITE_ROOT / "hero.jpeg"
 SITE_STATIC_DIR = SITE_ROOT / "static"
+MAPPER_TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 mapper_app = FastAPI(title="EMS Muscle Mapper")
 mapper_app.mount("/static", StaticFiles(directory="templates"), name="static")
-templates = Jinja2Templates(directory="templates")
+mapper_app.mount(
+    "/shared-static",
+    StaticFiles(directory=SITE_STATIC_DIR),
+    name="shared-static",
+)
+templates = Jinja2Templates(directory=MAPPER_TEMPLATE_DIR)
+site_templates = Jinja2Templates(directory=[SITE_ROOT, MAPPER_TEMPLATE_DIR])
 
 _CACHE_MAX_PAIRS = 32
 _result_cache: OrderedDict[str, dict[str, object]] = OrderedDict()
@@ -313,9 +320,15 @@ app.mount("/static", StaticFiles(directory=SITE_STATIC_DIR), name="site-static")
 
 
 @app.get("/")
-async def landing():
+async def landing(request: Request):
     """Render the parent site's landing page."""
-    return FileResponse(LANDING_PAGE)
+    return site_templates.TemplateResponse(request=request, name="index.html")
+
+
+@app.get("/hero.jpeg")
+async def hero_image():
+    """Serve the landing page's root-level hero image."""
+    return FileResponse(HERO_IMAGE)
 
 
 app.mount("/ems-muscle-mapper", mapper_app, name="ems-muscle-mapper")

@@ -19,6 +19,7 @@
     --signal-shift-y: 0px;
     --signal-light-x: 50%;
     --signal-light-y: 50%;
+    --site-header-height: clamp(3.9rem, 7vh, 4.75rem);
 }
 
 * {
@@ -44,6 +45,10 @@ body {
     font-family: Bahnschrift, "Avenir Next Condensed", "Segoe UI", sans-serif;
     font-size: 1rem;
     letter-spacing: 0.015em;
+}
+
+.site-with-header {
+    padding-top: calc(var(--site-header-height) + clamp(0.75rem, 2vw, 1.75rem));
 }
 
 body::before {
@@ -96,8 +101,148 @@ body::after {
 .electric-rail--top {
     top: 0;
     bottom: auto;
-    opacity: 0.5;
+    z-index: 4;
+    height: clamp(1.8rem, 3.5vh, 2.4rem);
+    opacity: 0.9;
     transform: scaleY(-1);
+}
+
+.site-header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 5;
+    width: 100%;
+    height: var(--site-header-height);
+    margin: 0;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(135, 247, 199, 0.18);
+    border-radius: 0;
+    background: #07100f;
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.22);
+}
+
+.site-header .electric-rail--top {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 1;
+    width: 100%;
+    margin: 0;
+}
+
+.site-header__inner {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(1rem, 3vw, 3rem);
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0;
+    padding: 0 clamp(0.9rem, 3vw, 2.5rem);
+}
+
+.site-header__brand {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 0.65rem;
+    padding: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: "IBM Plex Mono", Consolas, monospace;
+    font-size: clamp(1rem, 1.8vw, 1.3rem);
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    text-decoration: none;
+    text-shadow: 0 0 12px rgba(135, 247, 199, 0.2);
+    text-transform: uppercase;
+}
+
+.site-header__brand-mark {
+    width: 0.58rem;
+    height: 0.58rem;
+    border: 1px solid var(--signal);
+    background: rgba(135, 247, 199, 0.16);
+    box-shadow:
+        0 0 8px rgba(135, 247, 199, 0.7),
+        inset 0 0 4px rgba(135, 247, 199, 0.5);
+    transform: rotate(45deg);
+}
+
+.product-tabs {
+    display: flex;
+    align-self: stretch;
+    align-items: stretch;
+    justify-content: flex-end;
+    gap: 0;
+    min-width: 0;
+}
+
+.product-tab {
+    position: relative;
+    display: inline-grid;
+    width: auto;
+    min-width: clamp(3rem, 8vw, 7rem);
+    min-height: 100%;
+    padding: 0.55rem clamp(0.65rem, 1.5vw, 1rem);
+    border: 0;
+    border-left: 1px solid rgba(135, 247, 199, 0.18);
+    border-radius: 0;
+    background: transparent;
+    color: var(--muted);
+    font-family: "IBM Plex Mono", Consolas, monospace;
+    font-size: clamp(0.57rem, 0.85vw, 0.68rem);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    place-items: center;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.product-tab:last-child {
+    border-right: 1px solid rgba(135, 247, 199, 0.18);
+}
+
+.product-tab:hover {
+    background: rgba(135, 247, 199, 0.055);
+    color: var(--ink);
+}
+
+.product-tab.is-active {
+    background: linear-gradient(180deg, transparent, rgba(24, 59, 49, 0.62));
+    color: var(--signal-strong);
+    box-shadow:
+        inset 0 -2px var(--signal);
+}
+
+button.product-tab--placeholder {
+    width: clamp(2.8rem, 6vw, 5rem);
+    min-width: clamp(2.8rem, 6vw, 5rem);
+    padding: 0;
+    cursor: default;
+    opacity: 0.55;
+    box-shadow: none;
+}
+
+button.product-tab--placeholder::before {
+    width: 45%;
+    height: 1px;
+    content: "";
+    background: rgba(135, 247, 199, 0.18);
+}
+
+button.product-tab--placeholder:hover {
+    background: transparent;
+    box-shadow: none;
+    transform: none;
 }
 
 .electric-rail svg {
@@ -602,6 +747,40 @@ button:disabled {
     to {
         stroke-dashoffset: -102;
         opacity: 0.55;
+    }
+}
+
+@media (max-width: 640px) {
+    .site-header__inner {
+        gap: 0.55rem;
+        padding: 0 0.65rem;
+    }
+
+    .site-header__brand {
+        gap: 0.45rem;
+        padding: 0;
+        font-size: 0.88rem;
+    }
+
+    .site-header__brand-mark {
+        width: 0.48rem;
+        height: 0.48rem;
+    }
+
+    .product-tabs {
+        gap: 0;
+    }
+
+    .product-tab {
+        min-width: 0;
+        min-height: 100%;
+        padding: 0.45rem 0.55rem;
+        font-size: 0.51rem;
+    }
+
+    button.product-tab--placeholder {
+        width: 1.9rem;
+        min-width: 1.9rem;
     }
 }
 
